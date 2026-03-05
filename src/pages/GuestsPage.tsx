@@ -11,10 +11,12 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useWedding } from "@/hooks/useWedding";
 import { supabase } from "@/integrations/supabase/client";
 import { Guest, GuestGroup } from "@/types/wedding";
+import CsvImportDialog from "@/components/guests/CsvImportDialog";
 
 const STATUS_LABELS: Record<string, string> = {
   confirmed: "אישר/ה",
@@ -31,6 +33,7 @@ const GuestsPage = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [groupFilter, setGroupFilter] = useState("all");
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   const [newGuest, setNewGuest] = useState({
@@ -61,9 +64,16 @@ const GuestsPage = () => {
     const q = search.trim().toLowerCase();
     return guests.filter((g) => {
       const text = [g.full_name, g.phone ?? "", g.email ?? ""].join(" ").toLowerCase();
-      return (q.length === 0 || text.includes(q)) && (statusFilter === "all" || (g.rsvp_status ?? "pending") === statusFilter);
+      const matchesSearch = q.length === 0 || text.includes(q);
+      const matchesStatus = statusFilter === "all" || (g.rsvp_status ?? "pending") === statusFilter;
+      const matchesGroup = groupFilter === "all"
+        ? true
+        : groupFilter === "none"
+          ? !g.group_id
+          : g.group_id === groupFilter;
+      return matchesSearch && matchesStatus && matchesGroup;
     });
-  }, [guests, search, statusFilter]);
+  }, [guests, search, statusFilter, groupFilter]);
 
   const addGuest = async () => {
     if (!wedding?.id || !newGuest.full_name.trim()) { toast.error("יש להזין שם מלא"); return; }
@@ -113,50 +123,61 @@ const GuestsPage = () => {
           <p className="mt-2 text-xl font-body text-muted-foreground">נהלו את כל רשימת המוזמנים במקום אחד.</p>
         </div>
 
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild>
-            <Button variant="hero"><UserPlus size={18} /> הוספת מוזמן</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle className="font-display text-2xl">הוספת מוזמן חדש</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="font-body">שם מלא *</Label>
-                <Input value={newGuest.full_name} onChange={(e) => setNewGuest((p) => ({ ...p, full_name: e.target.value }))} className="font-body" />
+        <div className="flex flex-wrap gap-2">
+          {wedding?.id && (
+            <CsvImportDialog
+              weddingId={wedding.id}
+              existingGroups={groups}
+              onImportDone={loadGuests}
+            />
+          )}
+
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+            <DialogTrigger asChild>
+              <Button variant="hero"><UserPlus size={18} /> הוספת מוזמן</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle className="font-display text-2xl">הוספת מוזמן חדש</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="font-body">שם מלא *</Label>
+                  <Input value={newGuest.full_name} onChange={(e) => setNewGuest((p) => ({ ...p, full_name: e.target.value }))} className="font-body" />
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="font-body">טלפון</Label>
+                    <Input value={newGuest.phone} onChange={(e) => setNewGuest((p) => ({ ...p, phone: e.target.value }))} className="font-body" dir="ltr" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-body">אימייל</Label>
+                    <Input value={newGuest.email} onChange={(e) => setNewGuest((p) => ({ ...p, email: e.target.value }))} className="font-body" type="email" dir="ltr" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="font-body">קבוצה</Label>
+                    <Select value={newGuest.group_id} onValueChange={(v) => setNewGuest((p) => ({ ...p, group_id: v }))}>
+                      <SelectTrigger className="font-body"><SelectValue placeholder="ללא קבוצה" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">ללא קבוצה</SelectItem>
+                        {groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-body">מלווים</Label>
+                    <Input type="number" min={0} value={newGuest.plus_ones} onChange={(e) => setNewGuest((p) => ({ ...p, plus_ones: Math.max(Number(e.target.value) || 0, 0) }))} className="font-body" />
+                  </div>
+                </div>
+                <Button className="w-full" variant="hero" onClick={addGuest}>שמירת מוזמן</Button>
               </div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="font-body">טלפון</Label>
-                  <Input value={newGuest.phone} onChange={(e) => setNewGuest((p) => ({ ...p, phone: e.target.value }))} className="font-body" dir="ltr" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-body">אימייל</Label>
-                  <Input value={newGuest.email} onChange={(e) => setNewGuest((p) => ({ ...p, email: e.target.value }))} className="font-body" type="email" dir="ltr" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="font-body">קבוצה</Label>
-                  <Select value={newGuest.group_id} onValueChange={(v) => setNewGuest((p) => ({ ...p, group_id: v }))}>
-                    <SelectTrigger className="font-body"><SelectValue placeholder="ללא קבוצה" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">ללא קבוצה</SelectItem>
-                      {groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-body">מלווים</Label>
-                  <Input type="number" min={0} value={newGuest.plus_ones} onChange={(e) => setNewGuest((p) => ({ ...p, plus_ones: Math.max(Number(e.target.value) || 0, 0) }))} className="font-body" />
-                </div>
-              </div>
-              <Button className="w-full" variant="hero" onClick={addGuest}>שמירת מוזמן</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      <section className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-4">
+      {/* Stats */}
+      <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
           { label: "סה״כ", value: stats.total },
           { label: "אישרו", value: stats.confirmed },
@@ -170,6 +191,40 @@ const GuestsPage = () => {
         ))}
       </section>
 
+      {/* Group filter chips */}
+      {groups.length > 0 && (
+        <section className="mt-4 flex flex-wrap gap-2">
+          <Badge
+            variant={groupFilter === "all" ? "default" : "outline"}
+            className="cursor-pointer font-body transition-colors"
+            onClick={() => setGroupFilter("all")}
+          >
+            כל הקבוצות ({guests.length})
+          </Badge>
+          {groups.map((g) => {
+            const count = guests.filter((guest) => guest.group_id === g.id).length;
+            return (
+              <Badge
+                key={g.id}
+                variant={groupFilter === g.id ? "default" : "outline"}
+                className="cursor-pointer font-body transition-colors"
+                onClick={() => setGroupFilter(groupFilter === g.id ? "all" : g.id)}
+              >
+                {g.name} ({count})
+              </Badge>
+            );
+          })}
+          <Badge
+            variant={groupFilter === "none" ? "default" : "outline"}
+            className="cursor-pointer font-body transition-colors"
+            onClick={() => setGroupFilter(groupFilter === "none" ? "all" : "none")}
+          >
+            ללא קבוצה ({guests.filter((g) => !g.group_id).length})
+          </Badge>
+        </section>
+      )}
+
+      {/* Table */}
       <section className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-card">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="relative min-w-[220px] flex-1">
@@ -192,7 +247,11 @@ const GuestsPage = () => {
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           </div>
         ) : filteredGuests.length === 0 ? (
-          <div className="py-14 text-center font-body text-muted-foreground">לא נמצאו מוזמנים לפי החיפוש הנוכחי.</div>
+          <div className="py-14 text-center font-body text-muted-foreground">
+            {guests.length === 0
+              ? "אין מוזמנים עדיין. הוסיפו מוזמנים ידנית או ייבאו מקובץ CSV."
+              : "לא נמצאו מוזמנים לפי הסינון הנוכחי."}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px]">
