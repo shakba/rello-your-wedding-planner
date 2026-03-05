@@ -16,6 +16,13 @@ const Login = () => {
   const { signIn, signUp, user, role, loading } = useAuth();
   const navigate = useNavigate();
 
+  const getErrorMessage = (error: unknown) => {
+    if (error && typeof error === "object" && "message" in error) {
+      return String((error as { message?: string }).message ?? "שגיאה לא צפויה");
+    }
+    return "שגיאה לא צפויה";
+  };
+
   useEffect(() => {
     if (!loading && user) {
       navigate(role === "admin" ? "/admin" : "/dashboard", { replace: true });
@@ -30,15 +37,15 @@ const Login = () => {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          toast.error(error.message === "Invalid login credentials" ? "אימייל או סיסמה שגויים" : error.message);
+          const msg = getErrorMessage(error);
+          toast.error(msg === "Invalid login credentials" ? "אימייל או סיסמה שגויים" : msg);
         } else {
           toast.success("התחברת בהצלחה!");
-          // Role-based redirect handled by useEffect below
         }
       } else {
         const { error } = await signUp(email, password, fullName);
         if (error) {
-          toast.error(error.message);
+          toast.error(getErrorMessage(error));
         } else {
           toast.success("נרשמת בהצלחה! בדקו את האימייל לאימות.");
         }
