@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useWedding } from "@/hooks/useWedding";
 import { supabase } from "@/integrations/supabase/client";
+import GalleryUpload from "@/components/wedding-site/GalleryUpload";
 
 interface WebsiteFormValues {
   partner1_name: string; partner2_name: string; wedding_date: string;
@@ -27,9 +28,10 @@ const normalizeSlug = (v: string) => v.trim().toLowerCase().replace(/[^a-z0-9-]+
 
 const WebsiteEditor = () => {
   const { user } = useAuth();
-  const { wedding, loading: weddingLoading, ensureWedding, reload } = useWedding(user?.id);
+  const { wedding, loading: weddingLoading, ensureWedding, reload, setWedding } = useWedding(user?.id);
   const [saving, setSaving] = useState(false);
   const [values, setValues] = useState<WebsiteFormValues>(EMPTY_FORM);
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user?.id || weddingLoading || wedding) return;
@@ -37,7 +39,7 @@ const WebsiteEditor = () => {
   }, [user?.id, weddingLoading, wedding, ensureWedding]);
 
   useEffect(() => {
-    if (!wedding) { setValues(EMPTY_FORM); return; }
+    if (!wedding) { setValues(EMPTY_FORM); setGalleryUrls([]); return; }
     setValues({
       partner1_name: wedding.partner1_name ?? "", partner2_name: wedding.partner2_name ?? "",
       wedding_date: wedding.wedding_date ?? "", venue_name: wedding.venue_name ?? "",
@@ -45,6 +47,7 @@ const WebsiteEditor = () => {
       dress_code: wedding.dress_code ?? "", website_slug: wedding.website_slug ?? "",
       website_published: wedding.website_published ?? false,
     });
+    setGalleryUrls(wedding.gallery_urls ?? []);
   }, [wedding]);
 
   const up = <K extends keyof WebsiteFormValues>(k: K, v: WebsiteFormValues[K]) => setValues((c) => ({ ...c, [k]: v }));
@@ -52,17 +55,30 @@ const WebsiteEditor = () => {
   const saveChanges = async () => {
     if (!wedding?.id) return;
     setSaving(true);
-    const { error } = await supabase.from("weddings").update({
-      partner1_name: values.partner1_name.trim(), partner2_name: values.partner2_name.trim(),
-      wedding_date: values.wedding_date || null, venue_name: values.venue_name.trim() || null,
-      venue_address: values.venue_address.trim() || null, story: values.story.trim() || null,
-      dress_code: values.dress_code.trim() || null, website_slug: normalizeSlug(values.website_slug) || null,
-      website_published: values.website_published,
-    }).eq("id", wedding.id);
-    setSaving(false);
-    if (error) { toast.error("לא הצלחנו לשמור את השינויים"); return; }
-    toast.success("האתר עודכן בהצלחה");
-    void reload();
+    try {
+      const { error } = await supabase.from("weddings").update({
+        partner1_name: values.partner1_name.trim(), partner2_name: values.partner2_name.trim(),
+        wedding_date: values.wedding_date || null, venue_name: values.venue_name.trim() || null,
+        venue_address: values.venue_address.trim() || null, story: values.story.trim() || null,
+        dress_code: values.dress_code.trim() || null, website_slug: normalizeSlug(values.website_slug) || null,
+        website_published: values.website_published,
+      }).eq("id", wedding.id);
+      if (error) { toast.error("לא הצלחנו לשמור את השינויים"); return; }
+      toast.success("האתר עודכן בהצלחה");
+      void reload();
+    } catch (err) {
+      console.error("Save error:", err);
+      toast.error("שגיאה בשמירה");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleGalleryUpdate = (urls: string[]) => {
+    setGalleryUrls(urls);
+    if (wedding) {
+      setWedding({ ...wedding, gallery_urls: urls });
+    }
   };
 
   if (weddingLoading || !wedding) {
@@ -93,6 +109,7 @@ const WebsiteEditor = () => {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        {/* Couple details */}
         <section className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-card">
           <h2 className="text-3xl font-display font-bold">פרטי הזוג</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -103,6 +120,7 @@ const WebsiteEditor = () => {
           <div className="space-y-2"><Label className="font-body">הסיפור שלכם</Label><Textarea value={values.story} onChange={(e) => up("story", e.target.value)} className="min-h-[180px] font-body" placeholder="ספרו לאורחים קצת על הדרך שלכם..." /></div>
         </section>
 
+        {/* Event details & publish */}
         <section className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-card">
           <h2 className="text-3xl font-display font-bold">פרטי אירוע ופרסום</h2>
           <div className="space-y-2"><Label className="font-body">שם מקום האירוע</Label><Input value={values.venue_name} onChange={(e) => up("venue_name", e.target.value)} className="font-body" /></div>
@@ -118,6 +136,15 @@ const WebsiteEditor = () => {
           </div>
         </section>
       </div>
+
+      {/* Gallery section */}
+      <section className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-card">
+        <GalleryUpload
+          weddingId={wedding.id}
+          galleryUrls={galleryUrls}
+          onUpdate={handleGalleryUpdate}
+        />
+      </section>
     </SidebarLayout>
   );
 };
