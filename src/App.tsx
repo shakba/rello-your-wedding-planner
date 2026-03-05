@@ -13,6 +13,7 @@ import WebsiteEditor from "./pages/WebsiteEditor";
 import AdminDashboard from "./pages/AdminDashboard";
 import WeddingWebsite from "./pages/WeddingWebsite";
 import ComingSoon from "./pages/ComingSoon";
+import SeatingPage from "./pages/SeatingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,11 +65,7 @@ const App = () => (
               path="/dashboard/seating"
               element={
                 <ProtectedRoute>
-                  <ComingSoon
-                    variant="couple"
-                    title="תכנון ישיבה"
-                    description="אנחנו בונים מחדש את כלי הישיבה עם חוויית גרירה חדשה."
-                  />
+                  <SeatingPage />
                 </ProtectedRoute>
               }
             />
