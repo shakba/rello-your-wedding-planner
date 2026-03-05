@@ -1,27 +1,28 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Heart } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from "react-router-dom";
-import { Heart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
+
+const getErrorMessage = (error: unknown) => {
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message?: string }).message ?? "שגיאה לא צפויה");
+  }
+  return "שגיאה לא צפויה";
+};
 
 const Login = () => {
+  const navigate = useNavigate();
+  const { signIn, signUp, user, role, loading } = useAuth();
+
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signUp, user, role, loading } = useAuth();
-  const navigate = useNavigate();
-
-  const getErrorMessage = (error: unknown) => {
-    if (error && typeof error === "object" && "message" in error) {
-      return String((error as { message?: string }).message ?? "שגיאה לא צפויה");
-    }
-    return "שגיאה לא צפויה";
-  };
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -29,102 +30,109 @@ const Login = () => {
     }
   }, [loading, user, role, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
 
     try {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          const msg = getErrorMessage(error);
-          toast.error(msg === "Invalid login credentials" ? "אימייל או סיסמה שגויים" : msg);
-        } else {
-          toast.success("התחברת בהצלחה!");
+          const message = getErrorMessage(error);
+          toast.error(message === "Invalid login credentials" ? "אימייל או סיסמה שגויים" : message);
+          return;
         }
-      } else {
-        const { error } = await signUp(email, password, fullName);
-        if (error) {
-          toast.error(getErrorMessage(error));
-        } else {
-          toast.success("נרשמת בהצלחה! בדקו את האימייל לאימות.");
-        }
+
+        toast.success("התחברת בהצלחה!");
+        return;
       }
+
+      const { error } = await signUp(email, password, fullName);
+      if (error) {
+        toast.error(getErrorMessage(error));
+        return;
+      }
+
+      toast.success("נרשמת בהצלחה! בדקו את המייל לאימות החשבון.");
+      setIsLogin(true);
     } finally {
-      setIsLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-warm flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-warm px-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-block">
-            <span className="text-3xl font-display font-bold text-gradient-hero">Rello</span>
+        <div className="mb-8 text-center">
+          <Link to="/" className="inline-block text-5xl font-display font-bold text-foreground">
+            Rello
           </Link>
-          <p className="text-muted-foreground font-body mt-2">
+          <p className="mt-2 font-body text-muted-foreground">
             {isLogin ? "התחברו לחשבון שלכם" : "צרו חשבון חדש"}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-card rounded-2xl shadow-card border border-border/50 p-8">
+        <form onSubmit={handleSubmit} className="rounded-3xl border border-border bg-card p-8 shadow-card">
           <div className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="name" className="font-body">שם מלא</Label>
+                <Label htmlFor="fullName" className="font-body">
+                  שם מלא
+                </Label>
                 <Input
-                  id="name"
+                  id="fullName"
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="שם מלא"
+                  onChange={(event) => setFullName(event.target.value)}
                   className="font-body"
                   required={!isLogin}
                 />
               </div>
             )}
+
             <div className="space-y-2">
-              <Label htmlFor="email" className="font-body">אימייל</Label>
+              <Label htmlFor="email" className="font-body">
+                אימייל
+              </Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@email.com"
+                onChange={(event) => setEmail(event.target.value)}
                 dir="ltr"
-                className="font-body text-left"
+                className="text-left font-body"
                 required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="password" className="font-body">סיסמה</Label>
+              <Label htmlFor="password" className="font-body">
+                סיסמה
+              </Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                onChange={(event) => setPassword(event.target.value)}
                 dir="ltr"
-                className="font-body text-left"
-                required
+                className="text-left font-body"
                 minLength={6}
+                required
               />
             </div>
-
-            <Button variant="hero" size="lg" className="w-full" type="submit" disabled={isLoading}>
-              <Heart size={18} />
-              {isLoading ? "רגע..." : isLogin ? "התחברות" : "הרשמה"}
-            </Button>
           </div>
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors font-body"
-            >
-              {isLogin ? "אין לכם חשבון? הירשמו כאן" : "יש לכם כבר חשבון? התחברו"}
-            </button>
-          </div>
+          <Button type="submit" variant="hero" size="lg" className="mt-6 w-full" disabled={submitting || loading}>
+            <Heart size={18} />
+            {submitting || loading ? "רגע..." : isLogin ? "התחברות" : "הרשמה"}
+          </Button>
+
+          <button
+            type="button"
+            onClick={() => setIsLogin((prev) => !prev)}
+            className="mt-5 w-full text-sm font-body text-muted-foreground transition-colors hover:text-primary"
+          >
+            {isLogin ? "אין לכם חשבון? הירשמו כאן" : "יש לכם כבר חשבון? התחברו"}
+          </button>
         </form>
       </div>
     </div>
