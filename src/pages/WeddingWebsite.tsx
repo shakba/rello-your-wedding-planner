@@ -19,7 +19,11 @@ const WeddingWebsite = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!slug) { setLoading(false); return; }
+    const normalizedSlug = slug?.trim().toLowerCase();
+    if (!normalizedSlug) {
+      setLoading(false);
+      return;
+    }
 
     let cancelled = false;
     void (async () => {
@@ -27,8 +31,10 @@ const WeddingWebsite = () => {
         const { data, error } = await supabase
           .from("weddings")
           .select("id, partner1_name, partner2_name, wedding_date, story, venue_name, venue_address, dress_code, gallery_urls")
-          .eq("website_slug", slug)
+          .eq("website_slug", normalizedSlug)
           .eq("website_published", true)
+          .order("updated_at", { ascending: false })
+          .limit(1)
           .maybeSingle();
 
         if (!cancelled) {
@@ -38,11 +44,16 @@ const WeddingWebsite = () => {
         }
       } catch (err) {
         console.error("Wedding fetch error:", err);
-        if (!cancelled) { setWedding(null); setLoading(false); }
+        if (!cancelled) {
+          setWedding(null);
+          setLoading(false);
+        }
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   const coupleNames = useMemo(() => {
