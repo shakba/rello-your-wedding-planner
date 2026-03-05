@@ -1,108 +1,204 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { ArrowUpRight, CheckSquare, Clock3, Users, XCircle } from "lucide-react";
 import SidebarLayout from "@/components/SidebarLayout";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useWedding } from "@/hooks/useWedding";
 import { supabase } from "@/integrations/supabase/client";
+import { EMPTY_GUEST_STATS, GuestStats, Profile } from "@/types/wedding";
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [wedding, setWedding] = useState<any>(null);
-  const [stats, setStats] = useState({ total: 0, confirmed: 0, pending: 0, declined: 0 });
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { wedding, loading: weddingLoading, ensureWedding } = useWedding(user?.id);
+
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [stats, setStats] = useState<GuestStats>(EMPTY_GUEST_STATS);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [creatingWedding, setCreatingWedding] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      // Load profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setProfile(profileData);
+    if (!user?.id) return;
 
-      // Load wedding
-      const { data: weddingData } = await supabase
-        .from("weddings")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setWedding(weddingData);
-
-      if (weddingData) {
-        // Load guest stats
-        const { data: guests } = await supabase
-          .from("guests")
-          .select("rsvp_status")
-          .eq("wedding_id", weddingData.id);
-
-        if (guests) {
-          setStats({
-            total: guests.length,
-            confirmed: guests.filter((g) => g.rsvp_status === "confirmed").length,
-            pending: guests.filter((g) => g.rsvp_status === "pending").length,
-            declined: guests.filter((g) => g.rsvp_status === "declined").length,
-          });
+    let cancelled = false;
+    void supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) {
+          setProfile(data ?? null);
         }
-      }
-      setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
     };
-    load();
-  }, [user]);
+  }, [user?.id]);
 
-  // Auto-create wedding if none exists
   useEffect(() => {
-    if (!loading && !wedding && user) {
-      supabase
-        .from("weddings")
-        .insert({ user_id: user.id, partner1_name: "", partner2_name: "" })
-        .select()
-        .single()
-        .then(({ data }) => {
-          if (data) setWedding(data);
-        });
-    }
-  }, [loading, wedding, user]);
+    if (!user?.id || weddingLoading || wedding || creatingWedding) return;
 
-  const displayName = profile?.full_name || user?.email || "שלום";
+    setCreatingWedding(true);
+    void ensureWedding().finally(() => setCreatingWedding(false));
+  }, [user?.id, weddingLoading, wedding, ensureWedding, creatingWedding]);
+
+  useEffect(() => {
+    if (!wedding?.id) {
+      setStats(EMPTY_GUEST_STATS);
+      setStatsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setStatsLoading(true);
+
+    const guestRequest = supabase
+      .from("guests")
+      .select("rsvp_status")
+      .eq("wedding_id", wedding.id);
+
+    guestRequest.then(
+      ({ data }) => {
+        if (cancelled) return;
+
+        const total = data?.length ?? 0;
+        const confirmed = data?.filter((guest) => guest.rsvp_status === "confirmed").length ?? 0;
+        const declined = data?.filter((guest) => guest.rsvp_status === "declined").length ?? 0;
+        const pending = total - confirmed - declined;
+        const responded = confirmed + declined;
+        const responseRate = total > 0 ? Number(((responded / total) * 100).toFixed(1)) : 0;
+
+        setStats({ total, confirmed, declined, pending, responded, responseRate });
+        setStatsLoading(false);
+      },
+      () => {
+        if (!cancelled) {
+          setStatsLoading(false);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [wedding?.id]);
+
+  const displayName = profile?.full_name || user?.email || "זוג יקר";
+  const loading = weddingLoading || creatingWedding || statsLoading;
+
+  const statCards = useMemo(
+    () => [
+      {
+        label: "Total Guests",
+        value: stats.total,
+        icon: Users,
+        iconClassName: "bg-primary/10 text-primary",
+      },
+      {
+        label: "Confirmed",
+        value: stats.confirmed,
+        icon: CheckSquare,
+        iconClassName: "bg-sage-light text-sage",
+      },
+      {
+        label: "Declined",
+        value: stats.declined,
+        icon: XCircle,
+        iconClassName: "bg-destructive/10 text-destructive",
+      },
+      {
+        label: "Pending",
+        value: stats.pending,
+        icon: Clock3,
+        iconClassName: "bg-secondary text-muted-foreground",
+      },
+    ],
+    [stats],
+  );
 
   return (
     <SidebarLayout variant="couple">
-      <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold">שלום, {displayName} 💍</h1>
-        <p className="text-muted-foreground font-body mt-1">ברוכים הבאים לדשבורד החתונה שלכם</p>
-      </div>
+      <section>
+        <h1 className="text-5xl font-display font-bold text-foreground">Dashboard</h1>
+        <p className="mt-2 text-2xl font-body text-muted-foreground">Welcome back, {displayName}.</p>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {[
-          { label: "סה״כ מוזמנים", value: stats.total },
-          { label: "אישרו הגעה", value: stats.confirmed },
-          { label: "ממתינים", value: stats.pending },
-          { label: "דחו", value: stats.declined },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-card rounded-2xl p-6 shadow-card border border-border/50">
-            <p className="text-sm text-muted-foreground font-body mb-1">{stat.label}</p>
-            <p className="text-3xl font-display font-bold">{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {wedding && (
-        <div className="bg-card rounded-2xl p-8 shadow-card border border-border/50 text-center">
-          <p className="text-muted-foreground font-body mb-4">
-            {stats.total === 0 ? "התחילו לבנות את החתונה שלכם!" : "המשיכו לנהל את החתונה"}
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Button variant="hero" asChild>
-              <Link to="/dashboard/website">בנו את האתר</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/dashboard/guests">נהלו מוזמנים</Link>
-            </Button>
-          </div>
+      {loading ? (
+        <div className="mt-8 flex items-center justify-center rounded-3xl border border-border bg-card p-16 shadow-card">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
+      ) : (
+        <>
+          <section className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {statCards.map((item) => (
+              <article key={item.label} className="rounded-3xl border border-border bg-card p-7 shadow-card">
+                <div className="mb-8 flex items-center justify-between">
+                  <span className={`rounded-2xl p-3 ${item.iconClassName}`}>
+                    <item.icon size={26} />
+                  </span>
+                  <ArrowUpRight size={18} className="text-muted-foreground" />
+                </div>
+                <p className="text-5xl font-display font-bold text-foreground">{item.value}</p>
+                <p className="mt-3 font-body text-2xl text-muted-foreground">{item.label}</p>
+              </article>
+            ))}
+          </section>
+
+          <section className="mt-7 rounded-3xl border border-border bg-card p-8 shadow-card">
+            <div className="flex items-center justify-between">
+              <h2 className="text-4xl font-display font-bold">RSVP Progress</h2>
+              <Link to="/dashboard/guests" className="font-body text-muted-foreground transition-colors hover:text-primary">
+                View All
+              </Link>
+            </div>
+
+            <div className="mt-7">
+              <div className="mb-2 flex items-center justify-between text-sm font-body text-muted-foreground">
+                <span>Response Rate</span>
+                <span>{stats.responseRate}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-secondary">
+                <div className="h-full bg-foreground transition-all" style={{ width: `${Math.min(stats.responseRate, 100)}%` }} />
+              </div>
+            </div>
+
+            <div className="mt-7 grid grid-cols-1 gap-4 text-center md:grid-cols-3">
+              <div className="rounded-2xl bg-secondary/60 p-4">
+                <p className="text-3xl font-display font-bold text-sage">
+                  {stats.total > 0 ? ((stats.confirmed / stats.total) * 100).toFixed(1) : "0"}%
+                </p>
+                <p className="mt-1 font-body text-muted-foreground">Attending</p>
+              </div>
+              <div className="rounded-2xl bg-secondary/60 p-4">
+                <p className="text-3xl font-display font-bold text-destructive">
+                  {stats.total > 0 ? ((stats.declined / stats.total) * 100).toFixed(1) : "0"}%
+                </p>
+                <p className="mt-1 font-body text-muted-foreground">Declined</p>
+              </div>
+              <div className="rounded-2xl bg-secondary/60 p-4">
+                <p className="text-3xl font-display font-bold text-accent">
+                  {stats.total > 0 ? ((stats.pending / stats.total) * 100).toFixed(1) : "0"}%
+                </p>
+                <p className="mt-1 font-body text-muted-foreground">Pending</p>
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-7 rounded-3xl border border-border bg-card p-8 shadow-card">
+            <h2 className="text-3xl font-display font-bold">Quick actions</h2>
+            <p className="mt-1 font-body text-muted-foreground">הכל מוכן — אפשר להמשיך לבנייה וניהול בלחיצה אחת.</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button variant="hero" asChild>
+                <Link to="/dashboard/website">Edit wedding website</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/dashboard/guests">Manage guests</Link>
+              </Button>
+            </div>
+          </section>
+        </>
       )}
     </SidebarLayout>
   );

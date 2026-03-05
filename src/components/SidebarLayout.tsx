@@ -1,10 +1,20 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
 import {
-  Users, Globe, MessageSquare, LayoutGrid, Gift, Settings, LogOut, BarChart3, Shield, UserPlus, Package,
+  LayoutDashboard,
+  Globe,
+  Users,
+  CalendarCheck,
+  Armchair,
+  Gift,
+  Settings,
+  Shield,
+  LogOut,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { NavLink } from "@/components/NavLink";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 interface SidebarLayoutProps {
   children: ReactNode;
@@ -12,19 +22,20 @@ interface SidebarLayoutProps {
 }
 
 const coupleLinks = [
-  { icon: BarChart3, label: "סקירה כללית", href: "/dashboard" },
-  { icon: Globe, label: "אתר החתונה", href: "/dashboard/website" },
-  { icon: Users, label: "מוזמנים", href: "/dashboard/guests" },
-  { icon: LayoutGrid, label: "תכנון ישיבה", href: "/dashboard/seating" },
-  { icon: Gift, label: "רשימת מתנות", href: "/dashboard/registry" },
-  { icon: Settings, label: "הגדרות", href: "/dashboard/settings" },
+  { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
+  { icon: Globe, label: "Website", href: "/dashboard/website" },
+  { icon: Users, label: "Guests", href: "/dashboard/guests" },
+  { icon: CalendarCheck, label: "RSVPs", href: "/dashboard/rsvps" },
+  { icon: Armchair, label: "Seating", href: "/dashboard/seating" },
+  { icon: Gift, label: "Registry", href: "/dashboard/registry" },
+  { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ];
 
 const adminLinks = [
-  { icon: Users, label: "ניהול זוגות", href: "/admin" },
-  { icon: UserPlus, label: "פתיחת חשבון", href: "/admin/create" },
-  { icon: Package, label: "חבילות", href: "/admin/packages" },
-  { icon: Settings, label: "הגדרות מערכת", href: "/admin/settings" },
+  { icon: LayoutDashboard, label: "Overview", href: "/admin" },
+  { icon: Users, label: "Couples", href: "/admin/create" },
+  { icon: Gift, label: "Packages", href: "/admin/packages" },
+  { icon: Settings, label: "Settings", href: "/admin/settings" },
 ];
 
 const SidebarLayout = ({ children, variant }: SidebarLayoutProps) => {
@@ -33,50 +44,88 @@ const SidebarLayout = ({ children, variant }: SidebarLayoutProps) => {
   const links = variant === "admin" ? adminLinks : coupleLinks;
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <aside className="w-64 bg-card border-l border-border p-6 flex flex-col shrink-0">
-        <Link to="/" className="mb-2">
-          <span className="text-2xl font-display font-bold text-gradient-hero">Rello</span>
-        </Link>
-        {variant === "admin" && (
-          <div className="flex items-center gap-2 mb-6 px-1">
-            <Shield size={14} className="text-primary" />
-            <span className="text-xs font-body text-primary font-semibold">ניהול מערכת</span>
+    <div className="min-h-screen bg-secondary/40" dir="ltr">
+      <header className="sticky top-0 z-10 border-b border-border bg-card/95 px-6 py-4 backdrop-blur-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/" className="inline-flex items-center gap-2">
+              <span className="text-3xl">💗</span>
+              <span className="text-3xl font-display font-bold text-foreground">Rello</span>
+            </Link>
+            <span className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-body text-muted-foreground">
+              {variant === "admin" ? "Admin workspace" : "Couple workspace"}
+            </span>
           </div>
-        )}
-        {variant === "couple" && <div className="mb-6" />}
 
-        <nav className="flex-1 space-y-1">
-          {links.map((link) => {
-            const isActive = location.pathname === link.href;
-            return (
-              <Link
+          <div className="flex items-center gap-2">
+            {variant === "couple" && (
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/dashboard/website">View Website</Link>
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => void signOut()} className="text-muted-foreground">
+              <LogOut size={16} />
+              Logout
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex min-h-[calc(100vh-81px)]">
+        <aside className="w-72 shrink-0 border-r border-border bg-card p-5">
+          <nav className="space-y-1">
+            {links.map((link) => (
+              <NavLink
                 key={link.href}
                 to={link.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-body text-sm ${
-                  isActive
-                    ? "bg-rose-light text-primary font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`}
+                end={link.href === "/dashboard" || link.href === "/admin"}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 font-body text-[1.05rem] text-muted-foreground transition-colors"
+                activeClassName="bg-rose-light text-primary font-semibold"
               >
-                <link.icon size={18} />
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+                <link.icon size={20} />
+                <span>{link.label}</span>
+              </NavLink>
+            ))}
+          </nav>
 
-        <Button
-          variant="ghost"
-          className="justify-start gap-3 text-muted-foreground"
-          onClick={signOut}
-        >
-          <LogOut size={18} />
-          התנתקות
-        </Button>
-      </aside>
+          <div
+            className={cn(
+              "mt-8 rounded-2xl border border-border p-5",
+              variant === "admin" ? "bg-secondary" : "bg-primary text-primary-foreground",
+            )}
+          >
+            <p className={cn("font-display text-2xl font-bold", variant === "admin" && "text-foreground")}>Need Help?</p>
+            <p
+              className={cn(
+                "mt-2 font-body text-sm",
+                variant === "admin" ? "text-muted-foreground" : "text-primary-foreground/90",
+              )}
+            >
+              {variant === "admin"
+                ? "ניהול החשבונות, החבילות והתכנים מרוכז כאן."
+                : "Get personalized support for your wedding planning"}
+            </p>
+            <Button
+              variant={variant === "admin" ? "outline" : "secondary"}
+              className="mt-4 w-full"
+              type="button"
+            >
+              Contact Support
+            </Button>
+          </div>
 
-      <main className="flex-1 p-8 overflow-auto">{children}</main>
+          {variant === "admin" && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-body text-muted-foreground">
+              <Shield size={14} className="text-primary" />
+              Admin mode
+            </div>
+          )}
+        </aside>
+
+        <main className="flex-1 overflow-y-auto p-6 md:p-8" dir="rtl">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

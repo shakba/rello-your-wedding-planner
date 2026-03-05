@@ -12,6 +12,7 @@ import GuestsPage from "./pages/GuestsPage";
 import WebsiteEditor from "./pages/WebsiteEditor";
 import AdminDashboard from "./pages/AdminDashboard";
 import WeddingWebsite from "./pages/WeddingWebsite";
+import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,23 +28,117 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
 
-            {/* Couple Dashboard */}
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/dashboard/guests" element={<ProtectedRoute><GuestsPage /></ProtectedRoute>} />
-            <Route path="/dashboard/website" element={<ProtectedRoute><WebsiteEditor /></ProtectedRoute>} />
-            <Route path="/dashboard/seating" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/dashboard/registry" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/dashboard/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/guests"
+              element={
+                <ProtectedRoute>
+                  <GuestsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/rsvps"
+              element={
+                <ProtectedRoute>
+                  <GuestsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/website"
+              element={
+                <ProtectedRoute>
+                  <WebsiteEditor />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/seating"
+              element={
+                <ProtectedRoute>
+                  <ComingSoon
+                    variant="couple"
+                    title="תכנון ישיבה"
+                    description="אנחנו בונים מחדש את כלי הישיבה עם חוויית גרירה חדשה."
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/registry"
+              element={
+                <ProtectedRoute>
+                  <ComingSoon
+                    variant="couple"
+                    title="רשימת מתנות"
+                    description="ממשק חדש לרשימת המתנות יעלה בקרוב כחלק מהבנייה מחדש."
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/settings"
+              element={
+                <ProtectedRoute>
+                  <ComingSoon
+                    variant="couple"
+                    title="הגדרות"
+                    description="מסך הגדרות חדש יתווסף בסבב הבא."
+                  />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Admin */}
-            <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/create" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/packages" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/create"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/packages"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <ComingSoon
+                    variant="admin"
+                    title="ניהול חבילות"
+                    description="מסך חבילות חדש נבנה מחדש כרגע."
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <ComingSoon
+                    variant="admin"
+                    title="הגדרות מערכת"
+                    description="הגדרות המערכת יתווספו במבנה החדש."
+                  />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Public Wedding Website */}
             <Route path="/w/:slug" element={<WeddingWebsite />} />
-
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

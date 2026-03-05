@@ -1,64 +1,118 @@
 import { useEffect, useState } from "react";
+import { Eye, Save } from "lucide-react";
+import { toast } from "sonner";
+import SidebarLayout from "@/components/SidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import SidebarLayout from "@/components/SidebarLayout";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
+import { useWedding } from "@/hooks/useWedding";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Save, Eye, Globe } from "lucide-react";
+
+interface WebsiteFormValues {
+  partner1_name: string;
+  partner2_name: string;
+  wedding_date: string;
+  venue_name: string;
+  venue_address: string;
+  story: string;
+  dress_code: string;
+  website_slug: string;
+  website_published: boolean;
+}
+
+const EMPTY_FORM: WebsiteFormValues = {
+  partner1_name: "",
+  partner2_name: "",
+  wedding_date: "",
+  venue_name: "",
+  venue_address: "",
+  story: "",
+  dress_code: "",
+  website_slug: "",
+  website_published: false,
+};
+
+const normalizeSlug = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-|-$/g, "");
 
 const WebsiteEditor = () => {
   const { user } = useAuth();
-  const [wedding, setWedding] = useState<any>(null);
+  const { wedding, loading: weddingLoading, ensureWedding, reload } = useWedding(user?.id);
+
   const [saving, setSaving] = useState(false);
+  const [values, setValues] = useState<WebsiteFormValues>(EMPTY_FORM);
 
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("weddings")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => setWedding(data));
-  }, [user]);
+    if (!user?.id || weddingLoading || wedding) return;
+    void ensureWedding();
+  }, [user?.id, weddingLoading, wedding, ensureWedding]);
 
-  const updateField = (field: string, value: any) => {
-    setWedding((prev: any) => ({ ...prev, [field]: value }));
+  useEffect(() => {
+    if (!wedding) {
+      setValues(EMPTY_FORM);
+      return;
+    }
+
+    setValues({
+      partner1_name: wedding.partner1_name ?? "",
+      partner2_name: wedding.partner2_name ?? "",
+      wedding_date: wedding.wedding_date ?? "",
+      venue_name: wedding.venue_name ?? "",
+      venue_address: wedding.venue_address ?? "",
+      story: wedding.story ?? "",
+      dress_code: wedding.dress_code ?? "",
+      website_slug: wedding.website_slug ?? "",
+      website_published: wedding.website_published ?? false,
+    });
+  }, [wedding]);
+
+  const updateValue = <K extends keyof WebsiteFormValues>(key: K, value: WebsiteFormValues[K]) => {
+    setValues((current) => ({ ...current, [key]: value }));
   };
 
-  const save = async () => {
-    if (!wedding) return;
+  const saveChanges = async () => {
+    if (!wedding?.id) return;
+
     setSaving(true);
     const { error } = await supabase
       .from("weddings")
       .update({
-        partner1_name: wedding.partner1_name,
-        partner2_name: wedding.partner2_name,
-        wedding_date: wedding.wedding_date,
-        venue_name: wedding.venue_name,
-        venue_address: wedding.venue_address,
-        story: wedding.story,
-        dress_code: wedding.dress_code,
-        website_slug: wedding.website_slug,
-        website_published: wedding.website_published,
+        partner1_name: values.partner1_name.trim(),
+        partner2_name: values.partner2_name.trim(),
+        wedding_date: values.wedding_date || null,
+        venue_name: values.venue_name.trim() || null,
+        venue_address: values.venue_address.trim() || null,
+        story: values.story.trim() || null,
+        dress_code: values.dress_code.trim() || null,
+        website_slug: normalizeSlug(values.website_slug) || null,
+        website_published: values.website_published,
       })
       .eq("id", wedding.id);
 
     setSaving(false);
+
     if (error) {
-      toast.error("שגיאה בשמירה");
-    } else {
-      toast.success("נשמר בהצלחה!");
+      toast.error("לא הצלחנו לשמור את השינויים");
+      return;
     }
+
+    toast.success("האתר עודכן בהצלחה");
+    void reload();
   };
 
-  if (!wedding) {
+  if (weddingLoading || !wedding) {
     return (
       <SidebarLayout variant="couple">
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center justify-center rounded-3xl border border-border bg-card p-16 shadow-card">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
       </SidebarLayout>
     );
@@ -66,126 +120,128 @@ const WebsiteEditor = () => {
 
   return (
     <SidebarLayout variant="couple">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold">אתר החתונה</h1>
-          <p className="text-muted-foreground font-body mt-1">ערכו את התוכן שיופיע באתר</p>
+          <h1 className="text-5xl font-display font-bold">Website Editor</h1>
+          <p className="mt-2 text-xl font-body text-muted-foreground">עדכנו את כל פרטי אתר החתונה במקום אחד.</p>
         </div>
-        <div className="flex gap-3">
-          {wedding.website_slug && (
+
+        <div className="flex items-center gap-2">
+          {values.website_slug && (
             <Button variant="outline" asChild>
-              <a href={`/w/${wedding.website_slug}`} target="_blank">
-                <Eye size={16} /> צפייה
+              <a href={`/w/${normalizeSlug(values.website_slug)}`} target="_blank" rel="noreferrer">
+                <Eye size={16} />
+                Preview
               </a>
             </Button>
           )}
-          <Button variant="hero" onClick={save} disabled={saving}>
-            <Save size={16} /> {saving ? "שומר..." : "שמירה"}
+          <Button variant="hero" onClick={saveChanges} disabled={saving}>
+            <Save size={16} />
+            {saving ? "שומר..." : "שמירה"}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="bg-card rounded-2xl p-6 shadow-card border border-border/50 space-y-4">
-            <h2 className="text-lg font-display font-semibold">פרטי הזוג</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="font-body">שם בן/בת זוג 1</Label>
-                <Input
-                  value={wedding.partner1_name}
-                  onChange={(e) => updateField("partner1_name", e.target.value)}
-                  className="font-body"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-body">שם בן/בת זוג 2</Label>
-                <Input
-                  value={wedding.partner2_name}
-                  onChange={(e) => updateField("partner2_name", e.target.value)}
-                  className="font-body"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="font-body">תאריך החתונה</Label>
-              <Input
-                type="date"
-                value={wedding.wedding_date || ""}
-                onChange={(e) => updateField("wedding_date", e.target.value)}
-                dir="ltr"
-                className="font-body text-left"
-              />
-            </div>
-          </div>
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <section className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-card">
+          <h2 className="text-3xl font-display font-bold">פרטי הזוג</h2>
 
-          <div className="bg-card rounded-2xl p-6 shadow-card border border-border/50 space-y-4">
-            <h2 className="text-lg font-display font-semibold">מקום האירוע</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label className="font-body">שם המקום</Label>
+              <Label className="font-body">שם בן/בת זוג 1</Label>
               <Input
-                value={wedding.venue_name || ""}
-                onChange={(e) => updateField("venue_name", e.target.value)}
+                value={values.partner1_name}
+                onChange={(event) => updateValue("partner1_name", event.target.value)}
                 className="font-body"
               />
             </div>
             <div className="space-y-2">
-              <Label className="font-body">כתובת</Label>
+              <Label className="font-body">שם בן/בת זוג 2</Label>
               <Input
-                value={wedding.venue_address || ""}
-                onChange={(e) => updateField("venue_address", e.target.value)}
+                value={values.partner2_name}
+                onChange={(event) => updateValue("partner2_name", event.target.value)}
                 className="font-body"
               />
             </div>
           </div>
-        </div>
 
-        <div className="space-y-6">
-          <div className="bg-card rounded-2xl p-6 shadow-card border border-border/50 space-y-4">
-            <h2 className="text-lg font-display font-semibold">הגדרות אתר</h2>
-            <div className="space-y-2">
-              <Label className="font-body">כתובת האתר (slug)</Label>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground font-body">/w/</span>
-                <Input
-                  value={wedding.website_slug || ""}
-                  onChange={(e) => updateField("website_slug", e.target.value)}
-                  dir="ltr"
-                  className="font-body text-left"
-                  placeholder="sarah-and-james"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="font-body">קוד לבוש</Label>
-              <Input
-                value={wedding.dress_code || ""}
-                onChange={(e) => updateField("dress_code", e.target.value)}
-                className="font-body"
-                placeholder="אלגנטי"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={wedding.website_published || false}
-                onChange={(e) => updateField("website_published", e.target.checked)}
-                className="w-4 h-4"
-              />
-              <Label className="font-body">פרסם את האתר</Label>
-            </div>
-          </div>
-
-          <div className="bg-card rounded-2xl p-6 shadow-card border border-border/50 space-y-4">
-            <h2 className="text-lg font-display font-semibold">הסיפור שלנו</h2>
-            <Textarea
-              value={wedding.story || ""}
-              onChange={(e) => updateField("story", e.target.value)}
-              className="font-body min-h-[150px]"
-              placeholder="ספרו את הסיפור שלכם..."
+          <div className="space-y-2">
+            <Label className="font-body">תאריך החתונה</Label>
+            <Input
+              type="date"
+              value={values.wedding_date}
+              onChange={(event) => updateValue("wedding_date", event.target.value)}
+              dir="ltr"
+              className="text-left font-body"
             />
           </div>
-        </div>
+
+          <div className="space-y-2">
+            <Label className="font-body">הסיפור שלכם</Label>
+            <Textarea
+              value={values.story}
+              onChange={(event) => updateValue("story", event.target.value)}
+              className="min-h-[180px] font-body"
+              placeholder="ספרו לאורחים קצת על הדרך שלכם..."
+            />
+          </div>
+        </section>
+
+        <section className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-card">
+          <h2 className="text-3xl font-display font-bold">פרטי אירוע ופרסום</h2>
+
+          <div className="space-y-2">
+            <Label className="font-body">שם מקום האירוע</Label>
+            <Input
+              value={values.venue_name}
+              onChange={(event) => updateValue("venue_name", event.target.value)}
+              className="font-body"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-body">כתובת מלאה</Label>
+            <Input
+              value={values.venue_address}
+              onChange={(event) => updateValue("venue_address", event.target.value)}
+              className="font-body"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-body">קוד לבוש</Label>
+            <Input
+              value={values.dress_code}
+              onChange={(event) => updateValue("dress_code", event.target.value)}
+              className="font-body"
+              placeholder="למשל: קלאסי אלגנט"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-body">כתובת אתר</Label>
+            <div className="flex items-center gap-2" dir="ltr">
+              <span className="font-body text-muted-foreground">/w/</span>
+              <Input
+                value={values.website_slug}
+                onChange={(event) => updateValue("website_slug", normalizeSlug(event.target.value))}
+                className="text-left font-body"
+                placeholder="sarah-and-james"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary/40 p-4">
+            <div>
+              <p className="font-body font-semibold">פרסום האתר</p>
+              <p className="text-sm font-body text-muted-foreground">כאשר פעיל, האורחים יוכלו לגשת לעמוד החתונה.</p>
+            </div>
+            <Switch
+              checked={values.website_published}
+              onCheckedChange={(checked) => updateValue("website_published", checked)}
+            />
+          </div>
+        </section>
       </div>
     </SidebarLayout>
   );
