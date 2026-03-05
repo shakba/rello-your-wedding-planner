@@ -104,10 +104,19 @@ const CsvImportDialog = ({ weddingId, existingGroups, onImportDone }: CsvImportD
   };
 
   const downloadTemplate = () => {
+    const BOM = "\uFEFF";
+    const csv = BOM + "שם מלא,טלפון,אימייל,קבוצה,מלווים,הערות\n" +
+      "ישראל ישראלי,0501234567,israel@example.com,חברים של החתן מהצבא,1,\n" +
+      "שרה כהן,0529876543,sara@example.com,חברים של הכלה מהבית,0,צמחונית\n" +
+      "דוד לוי,0541112233,,משפחה גרעינית,2,\n" +
+      "רחל אברהם,0501234568,rachel@example.com,משפחה מורחבת,1,אלרגיה לגלוטן\n";
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = "/templates/guests-template.csv";
+    link.href = url;
     link.download = "guests-template.csv";
     link.click();
+    URL.revokeObjectURL(url);
   };
 
   const resetPreview = () => {
