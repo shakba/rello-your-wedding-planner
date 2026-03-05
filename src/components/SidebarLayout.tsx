@@ -22,29 +22,28 @@ interface SidebarLayoutProps {
 }
 
 const coupleLinks = [
-  { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
-  { icon: Globe, label: "Website", href: "/dashboard/website" },
-  { icon: Users, label: "Guests", href: "/dashboard/guests" },
-  { icon: CalendarCheck, label: "RSVPs", href: "/dashboard/rsvps" },
-  { icon: Armchair, label: "Seating", href: "/dashboard/seating" },
-  { icon: Gift, label: "Registry", href: "/dashboard/registry" },
-  { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  { icon: LayoutDashboard, label: "סקירה כללית", href: "/dashboard" },
+  { icon: Globe, label: "אתר החתונה", href: "/dashboard/website" },
+  { icon: Users, label: "מוזמנים", href: "/dashboard/guests" },
+  { icon: CalendarCheck, label: "אישורי הגעה", href: "/dashboard/rsvps" },
+  { icon: Armchair, label: "תכנון ישיבה", href: "/dashboard/seating" },
+  { icon: Gift, label: "רשימת מתנות", href: "/dashboard/registry" },
+  { icon: Settings, label: "הגדרות", href: "/dashboard/settings" },
 ];
 
 const adminLinks = [
-  { icon: LayoutDashboard, label: "Overview", href: "/admin" },
-  { icon: Users, label: "Couples", href: "/admin/create" },
-  { icon: Gift, label: "Packages", href: "/admin/packages" },
-  { icon: Settings, label: "Settings", href: "/admin/settings" },
+  { icon: LayoutDashboard, label: "סקירה כללית", href: "/admin" },
+  { icon: Users, label: "ניהול זוגות", href: "/admin/create" },
+  { icon: Gift, label: "חבילות", href: "/admin/packages" },
+  { icon: Settings, label: "הגדרות", href: "/admin/settings" },
 ];
 
 const SidebarLayout = ({ children, variant }: SidebarLayoutProps) => {
   const { signOut } = useAuth();
-  const location = useLocation();
   const links = variant === "admin" ? adminLinks : coupleLinks;
 
   return (
-    <div className="min-h-screen bg-secondary/40" dir="ltr">
+    <div className="min-h-screen bg-secondary/40" dir="rtl">
       <header className="sticky top-0 z-10 border-b border-border bg-card/95 px-6 py-4 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -53,26 +52,26 @@ const SidebarLayout = ({ children, variant }: SidebarLayoutProps) => {
               <span className="text-3xl font-display font-bold text-foreground">Rello</span>
             </Link>
             <span className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-body text-muted-foreground">
-              {variant === "admin" ? "Admin workspace" : "Couple workspace"}
+              {variant === "admin" ? "ניהול מערכת" : "דשבורד הזוג"}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             {variant === "couple" && (
               <Button variant="outline" size="sm" asChild>
-                <Link to="/dashboard/website">View Website</Link>
+                <Link to="/dashboard/website">צפייה באתר</Link>
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={() => void signOut()} className="text-muted-foreground">
               <LogOut size={16} />
-              Logout
+              התנתקות
             </Button>
           </div>
         </div>
       </header>
 
       <div className="flex min-h-[calc(100vh-81px)]">
-        <aside className="w-72 shrink-0 border-r border-border bg-card p-5">
+        <aside className="w-72 shrink-0 border-l border-border bg-card p-5">
           <nav className="space-y-1">
             {links.map((link) => (
               <NavLink
@@ -94,7 +93,7 @@ const SidebarLayout = ({ children, variant }: SidebarLayoutProps) => {
               variant === "admin" ? "bg-secondary" : "bg-primary text-primary-foreground",
             )}
           >
-            <p className={cn("font-display text-2xl font-bold", variant === "admin" && "text-foreground")}>Need Help?</p>
+            <p className={cn("font-display text-2xl font-bold", variant === "admin" && "text-foreground")}>צריכים עזרה?</p>
             <p
               className={cn(
                 "mt-2 font-body text-sm",
@@ -103,26 +102,26 @@ const SidebarLayout = ({ children, variant }: SidebarLayoutProps) => {
             >
               {variant === "admin"
                 ? "ניהול החשבונות, החבילות והתכנים מרוכז כאן."
-                : "Get personalized support for your wedding planning"}
+                : "קבלו ליווי אישי לתכנון החתונה שלכם"}
             </p>
             <Button
               variant={variant === "admin" ? "outline" : "secondary"}
               className="mt-4 w-full"
               type="button"
             >
-              Contact Support
+              יצירת קשר
             </Button>
           </div>
 
           {variant === "admin" && (
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-body text-muted-foreground">
               <Shield size={14} className="text-primary" />
-              Admin mode
+              מצב ניהול
             </div>
           )}
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-6 md:p-8" dir="rtl">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8">
           {children}
         </main>
       </div>

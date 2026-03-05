@@ -18,8 +18,13 @@ const Dashboard = () => {
   const [creatingWedding, setCreatingWedding] = useState(false);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user) return;
+    if (!user.id) return;
+    void ensureWedding();
+  }, [user, ensureWedding]);
 
+  useEffect(() => {
+    if (!user?.id) return;
     let cancelled = false;
     void supabase
       .from("profiles")
@@ -27,19 +32,13 @@ const Dashboard = () => {
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (!cancelled) {
-          setProfile(data ?? null);
-        }
+        if (!cancelled) setProfile(data ?? null);
       });
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id || weddingLoading || wedding || creatingWedding) return;
-
     setCreatingWedding(true);
     void ensureWedding().finally(() => setCreatingWedding(false));
   }, [user?.id, weddingLoading, wedding, ensureWedding, creatingWedding]);
@@ -50,39 +49,24 @@ const Dashboard = () => {
       setStatsLoading(false);
       return;
     }
-
     let cancelled = false;
     setStatsLoading(true);
-
-    const guestRequest = supabase
-      .from("guests")
-      .select("rsvp_status")
-      .eq("wedding_id", wedding.id);
-
+    const guestRequest = supabase.from("guests").select("rsvp_status").eq("wedding_id", wedding.id);
     guestRequest.then(
       ({ data }) => {
         if (cancelled) return;
-
         const total = data?.length ?? 0;
-        const confirmed = data?.filter((guest) => guest.rsvp_status === "confirmed").length ?? 0;
-        const declined = data?.filter((guest) => guest.rsvp_status === "declined").length ?? 0;
+        const confirmed = data?.filter((g) => g.rsvp_status === "confirmed").length ?? 0;
+        const declined = data?.filter((g) => g.rsvp_status === "declined").length ?? 0;
         const pending = total - confirmed - declined;
         const responded = confirmed + declined;
         const responseRate = total > 0 ? Number(((responded / total) * 100).toFixed(1)) : 0;
-
         setStats({ total, confirmed, declined, pending, responded, responseRate });
         setStatsLoading(false);
       },
-      () => {
-        if (!cancelled) {
-          setStatsLoading(false);
-        }
-      },
+      () => { if (!cancelled) setStatsLoading(false); },
     );
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [wedding?.id]);
 
   const displayName = profile?.full_name || user?.email || "זוג יקר";
@@ -90,30 +74,10 @@ const Dashboard = () => {
 
   const statCards = useMemo(
     () => [
-      {
-        label: "Total Guests",
-        value: stats.total,
-        icon: Users,
-        iconClassName: "bg-primary/10 text-primary",
-      },
-      {
-        label: "Confirmed",
-        value: stats.confirmed,
-        icon: CheckSquare,
-        iconClassName: "bg-sage-light text-sage",
-      },
-      {
-        label: "Declined",
-        value: stats.declined,
-        icon: XCircle,
-        iconClassName: "bg-destructive/10 text-destructive",
-      },
-      {
-        label: "Pending",
-        value: stats.pending,
-        icon: Clock3,
-        iconClassName: "bg-secondary text-muted-foreground",
-      },
+      { label: "סה״כ מוזמנים", value: stats.total, icon: Users, iconClassName: "bg-primary/10 text-primary" },
+      { label: "אישרו הגעה", value: stats.confirmed, icon: CheckSquare, iconClassName: "bg-sage-light text-sage" },
+      { label: "דחו", value: stats.declined, icon: XCircle, iconClassName: "bg-destructive/10 text-destructive" },
+      { label: "ממתינים", value: stats.pending, icon: Clock3, iconClassName: "bg-secondary text-muted-foreground" },
     ],
     [stats],
   );
@@ -121,8 +85,8 @@ const Dashboard = () => {
   return (
     <SidebarLayout variant="couple">
       <section>
-        <h1 className="text-5xl font-display font-bold text-foreground">Dashboard</h1>
-        <p className="mt-2 text-2xl font-body text-muted-foreground">Welcome back, {displayName}.</p>
+        <h1 className="text-5xl font-display font-bold text-foreground">דשבורד</h1>
+        <p className="mt-2 text-2xl font-body text-muted-foreground">שלום, {displayName} 💍</p>
       </section>
 
       {loading ? (
@@ -148,15 +112,15 @@ const Dashboard = () => {
 
           <section className="mt-7 rounded-3xl border border-border bg-card p-8 shadow-card">
             <div className="flex items-center justify-between">
-              <h2 className="text-4xl font-display font-bold">RSVP Progress</h2>
+              <h2 className="text-4xl font-display font-bold">התקדמות אישורים</h2>
               <Link to="/dashboard/guests" className="font-body text-muted-foreground transition-colors hover:text-primary">
-                View All
+                הצג הכל
               </Link>
             </div>
 
             <div className="mt-7">
               <div className="mb-2 flex items-center justify-between text-sm font-body text-muted-foreground">
-                <span>Response Rate</span>
+                <span>אחוז מענה</span>
                 <span>{stats.responseRate}%</span>
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-secondary">
@@ -169,32 +133,32 @@ const Dashboard = () => {
                 <p className="text-3xl font-display font-bold text-sage">
                   {stats.total > 0 ? ((stats.confirmed / stats.total) * 100).toFixed(1) : "0"}%
                 </p>
-                <p className="mt-1 font-body text-muted-foreground">Attending</p>
+                <p className="mt-1 font-body text-muted-foreground">מגיעים</p>
               </div>
               <div className="rounded-2xl bg-secondary/60 p-4">
                 <p className="text-3xl font-display font-bold text-destructive">
                   {stats.total > 0 ? ((stats.declined / stats.total) * 100).toFixed(1) : "0"}%
                 </p>
-                <p className="mt-1 font-body text-muted-foreground">Declined</p>
+                <p className="mt-1 font-body text-muted-foreground">דחו</p>
               </div>
               <div className="rounded-2xl bg-secondary/60 p-4">
                 <p className="text-3xl font-display font-bold text-accent">
                   {stats.total > 0 ? ((stats.pending / stats.total) * 100).toFixed(1) : "0"}%
                 </p>
-                <p className="mt-1 font-body text-muted-foreground">Pending</p>
+                <p className="mt-1 font-body text-muted-foreground">ממתינים</p>
               </div>
             </div>
           </section>
 
           <section className="mt-7 rounded-3xl border border-border bg-card p-8 shadow-card">
-            <h2 className="text-3xl font-display font-bold">Quick actions</h2>
+            <h2 className="text-3xl font-display font-bold">פעולות מהירות</h2>
             <p className="mt-1 font-body text-muted-foreground">הכל מוכן — אפשר להמשיך לבנייה וניהול בלחיצה אחת.</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Button variant="hero" asChild>
-                <Link to="/dashboard/website">Edit wedding website</Link>
+                <Link to="/dashboard/website">עריכת אתר החתונה</Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/dashboard/guests">Manage guests</Link>
+                <Link to="/dashboard/guests">ניהול מוזמנים</Link>
               </Button>
             </div>
           </section>
