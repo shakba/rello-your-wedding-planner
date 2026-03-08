@@ -238,19 +238,20 @@ const SeatingPage = () => {
       </div>
 
       {/* Stats bar */}
-      <div className="mt-4 flex flex-wrap gap-3">
+      <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-5">
         {[
-          { label: "שולחנות", value: stats.tables, color: "bg-primary/10 text-primary" },
-          { label: "מקומות", value: stats.totalCapacity, color: "bg-sage-light text-sage" },
-          { label: "שובצו", value: stats.assigned, color: "bg-accent/10 text-accent" },
-          { label: "אישרו הגעה", value: stats.confirmed, color: "bg-sage-light text-sage" },
-          { label: 'סה"כ מוזמנים', value: stats.totalGuests, color: "bg-secondary text-muted-foreground" },
-        ].map((s) => (
-          <div key={s.label} className={`rounded-xl px-4 py-2 text-sm font-body ${s.color}`}>
-            <span className="font-bold">{s.value}</span> {s.label}
-          </div>
+          { label: "שולחנות", value: stats.tables },
+          { label: "מקומות", value: stats.totalCapacity },
+          { label: "שובצו", value: stats.assigned },
+          { label: "אישרו הגעה", value: stats.confirmed },
+          { label: 'סה"כ מוזמנים', value: stats.totalGuests },
+        ].map((item) => (
+          <article key={item.label} className="rounded-2xl border border-border bg-card p-5 text-center shadow-card">
+            <p className="font-body text-sm text-muted-foreground">{item.label}</p>
+            <p className="mt-2 text-3xl font-display font-bold text-foreground">{item.value}</p>
+          </article>
         ))}
-      </div>
+      </section>
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab} className="mt-5">
