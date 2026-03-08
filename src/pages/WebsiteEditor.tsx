@@ -89,11 +89,19 @@ const WebsiteEditor = () => {
   useEffect(() => {
     if (!wedding) { setValues(EMPTY_FORM); setGalleryUrls([]); return; }
     setValues({
-      partner1_name: wedding.partner1_name ?? "", partner2_name: wedding.partner2_name ?? "",
-      wedding_date: wedding.wedding_date ?? "", venue_name: wedding.venue_name ?? "",
-      venue_address: wedding.venue_address ?? "", story: wedding.story ?? "",
-      dress_code: wedding.dress_code ?? "", website_slug: wedding.website_slug ?? "",
+      partner1_name: wedding.partner1_name ?? "",
+      partner2_name: wedding.partner2_name ?? "",
+      wedding_date: wedding.wedding_date ?? "",
+      venue_name: wedding.venue_name ?? "",
+      venue_address: wedding.venue_address ?? "",
+      story: wedding.story ?? "",
+      dress_code: wedding.dress_code ?? "",
+      website_slug: wedding.website_slug ?? "",
       website_published: wedding.website_published ?? false,
+      parent1_parents: wedding.parent1_parents ?? "",
+      parent2_parents: wedding.parent2_parents ?? "",
+      event_time: wedding.event_time ?? "",
+      schedule_text: formatSchedule(wedding.schedule),
     });
     setGalleryUrls(wedding.gallery_urls ?? []);
   }, [wedding]);
