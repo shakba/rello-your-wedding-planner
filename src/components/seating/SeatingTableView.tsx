@@ -21,13 +21,16 @@ const statusBadge: Record<string, { label: string; className: string; icon: type
   declined: { label: "לא מגיע", className: "bg-destructive/10 text-destructive border-destructive/20", icon: XCircle },
 };
 
+const getGuestTotal = (guest: Guest) => 1 + Math.max(guest.plus_ones ?? 0, 0);
+
 const SeatingTableView = ({ elements, guests, assignments, onUnassign, onSelectElement }: SeatingTableViewProps) => {
   const tables = useMemo(() => {
     return elements
       .filter((el) => el.type === "round-table" || el.type === "rect-table")
       .map((el) => {
         const seated = guests.filter((g) => assignments[g.id] === el.id);
-        return { ...el, seated };
+        const seatedTotal = seated.reduce((sum, guest) => sum + getGuestTotal(guest), 0);
+        return { ...el, seated, seatedTotal };
       });
   }, [elements, guests, assignments]);
 
@@ -51,9 +54,9 @@ const SeatingTableView = ({ elements, guests, assignments, onUnassign, onSelectE
             <div className="flex items-center gap-2">
               <Badge variant="outline" className={cn(
                 "text-xs",
-                table.seated.length >= (table.capacity ?? 8) ? "border-destructive/40 text-destructive" : "border-sage/40 text-sage"
+                table.seatedTotal >= (table.capacity ?? 8) ? "border-destructive/40 text-destructive" : "border-sage/40 text-sage"
               )}>
-                {table.seated.length} / {table.capacity ?? 8}
+                {table.seatedTotal} / {table.capacity ?? 8}
               </Badge>
             </div>
           </div>
@@ -66,7 +69,7 @@ const SeatingTableView = ({ elements, guests, assignments, onUnassign, onSelectE
                 <TableRow>
                   <TableHead className="text-right">שם</TableHead>
                   <TableHead className="text-right">סטטוס</TableHead>
-                  <TableHead className="text-right">מלווים</TableHead>
+                  <TableHead className="text-right">סה״כ אורחים</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -82,7 +85,7 @@ const SeatingTableView = ({ elements, guests, assignments, onUnassign, onSelectE
                           {sb.label}
                         </span>
                       </TableCell>
-                      <TableCell className="text-sm font-body">{g.plus_ones ?? 0}</TableCell>
+                      <TableCell className="text-sm font-body">{getGuestTotal(g)}</TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); onUnassign(g.id); }}>
                           <UserMinus size={14} />
@@ -110,7 +113,7 @@ const SeatingTableView = ({ elements, guests, assignments, onUnassign, onSelectE
               <TableRow>
                 <TableHead className="text-right">שם</TableHead>
                 <TableHead className="text-right">סטטוס</TableHead>
-                <TableHead className="text-right">מלווים</TableHead>
+                <TableHead className="text-right">סה״כ אורחים</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -125,7 +128,7 @@ const SeatingTableView = ({ elements, guests, assignments, onUnassign, onSelectE
                         {sb.label}
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm font-body">{g.plus_ones ?? 0}</TableCell>
+                    <TableCell className="text-sm font-body">{getGuestTotal(g)}</TableCell>
                   </TableRow>
                 );
               })}

@@ -24,6 +24,8 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; c
   declined: { label: "דחה", icon: XCircle, className: "text-destructive" },
 };
 
+const getGuestTotal = (guest: Guest) => 1 + Math.max(guest.plus_ones ?? 0, 0);
+
 const GuestAssignPanel = ({
   guests,
   assignments,
@@ -48,6 +50,10 @@ const GuestAssignPanel = ({
     if (!selectedElementId) return [];
     return guests.filter((g) => assignments[g.id] === selectedElementId);
   }, [guests, assignments, selectedElementId]);
+
+  const assignedToSelectedTotal = useMemo(() => {
+    return assignedToSelected.reduce((sum, guest) => sum + getGuestTotal(guest), 0);
+  }, [assignedToSelected]);
 
   const filters: { value: RsvpFilter; label: string; count: number }[] = useMemo(() => {
     const unassigned = guests.filter((g) => !assignments[g.id]);
@@ -96,8 +102,8 @@ const GuestAssignPanel = ({
       {/* Assigned to selected table */}
       {selectedElementId && (
         <div className="border-b border-border p-3 bg-primary/5">
-          <p className="text-xs font-body font-semibold text-primary mb-2">
-            יושבים ב{selectedElementLabel} ({assignedToSelected.length})
+          <p className="mb-2 text-xs font-body font-semibold text-primary">
+            יושבים ב{selectedElementLabel} ({assignedToSelected.length} משקי בית / {assignedToSelectedTotal} אורחים)
           </p>
           {assignedToSelected.length === 0 ? (
             <p className="text-xs font-body text-muted-foreground">גררו מוזמנים לכאן</p>
@@ -110,6 +116,7 @@ const GuestAssignPanel = ({
                     <div className="flex items-center gap-1.5">
                       <sc.icon size={12} className={sc.className} />
                       <span className="text-xs font-body text-foreground">{g.full_name}</span>
+                      <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">{getGuestTotal(g)}</Badge>
                     </div>
                     <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => onUnassign(g.id)}>
                       <X size={12} />
@@ -130,14 +137,12 @@ const GuestAssignPanel = ({
             return (
               <div
                 key={g.id}
-                className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-secondary/60 transition-colors"
+                className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-secondary/60"
               >
                 <div className="flex items-center gap-1.5">
                   <sc.icon size={12} className={sc.className} />
                   <span className="text-xs font-body text-foreground">{g.full_name}</span>
-                  {g.plus_ones ? (
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">+{g.plus_ones}</Badge>
-                  ) : null}
+                  <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">{getGuestTotal(g)}</Badge>
                 </div>
                 {selectedElementId && (
                   <Button

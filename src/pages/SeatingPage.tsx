@@ -15,6 +15,8 @@ import GuestAssignPanel from "@/components/seating/GuestAssignPanel";
 import SeatingTableView from "@/components/seating/SeatingTableView";
 import { toast } from "sonner";
 
+const getGuestTotal = (guest: Guest) => 1 + Math.max(guest.plus_ones ?? 0, 0);
+
 const SeatingPage = () => {
   const { user } = useAuth();
   const { wedding, loading: weddingLoading } = useWedding(user?.id);
@@ -136,8 +138,13 @@ const SeatingPage = () => {
   }, []);
 
   const getAssignedCount = useCallback(
-    (elementId: string) => Object.values(assignments).filter((eId) => eId === elementId).length,
-    [assignments]
+    (elementId: string) => Object.entries(assignments)
+      .filter(([, eId]) => eId === elementId)
+      .reduce((sum, [guestId]) => {
+        const guest = guests.find((g) => g.id === guestId);
+        return sum + (guest ? getGuestTotal(guest) : 0);
+      }, 0),
+    [assignments, guests]
   );
 
   const selectedElement = useMemo(() => elements.find((e) => e.id === selectedId) ?? null, [elements, selectedId]);
@@ -191,9 +198,14 @@ const SeatingPage = () => {
 
   // Stats
   const stats = useMemo(() => {
-    const totalGuests = guests.length;
-    const assigned = Object.keys(assignments).length;
-    const confirmed = guests.filter((g) => g.rsvp_status === "confirmed").length;
+    const totalGuests = guests.reduce((sum, guest) => sum + getGuestTotal(guest), 0);
+    const assigned = Object.entries(assignments).reduce((sum, [guestId]) => {
+      const guest = guests.find((g) => g.id === guestId);
+      return sum + (guest ? getGuestTotal(guest) : 0);
+    }, 0);
+    const confirmed = guests
+      .filter((g) => g.rsvp_status === "confirmed")
+      .reduce((sum, guest) => sum + getGuestTotal(guest), 0);
     const tables = elements.filter((e) => e.type === "round-table" || e.type === "rect-table").length;
     const totalCapacity = elements
       .filter((e) => e.type === "round-table" || e.type === "rect-table")
@@ -226,19 +238,20 @@ const SeatingPage = () => {
       </div>
 
       {/* Stats bar */}
-      <div className="mt-4 flex flex-wrap gap-3">
+      <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-5">
         {[
-          { label: "שולחנות", value: stats.tables, color: "bg-primary/10 text-primary" },
-          { label: "מקומות", value: stats.totalCapacity, color: "bg-sage-light text-sage" },
-          { label: "שובצו", value: stats.assigned, color: "bg-accent/10 text-accent" },
-          { label: "אישרו הגעה", value: stats.confirmed, color: "bg-sage-light text-sage" },
-          { label: 'סה"כ מוזמנים', value: stats.totalGuests, color: "bg-secondary text-muted-foreground" },
-        ].map((s) => (
-          <div key={s.label} className={`rounded-xl px-4 py-2 text-sm font-body ${s.color}`}>
-            <span className="font-bold">{s.value}</span> {s.label}
-          </div>
+          { label: "שולחנות", value: stats.tables },
+          { label: "מקומות", value: stats.totalCapacity },
+          { label: "שובצו", value: stats.assigned },
+          { label: "אישרו הגעה", value: stats.confirmed },
+          { label: 'סה"כ מוזמנים', value: stats.totalGuests },
+        ].map((item) => (
+          <article key={item.label} className="rounded-2xl border border-border bg-card p-5 text-center shadow-card">
+            <p className="font-body text-sm text-muted-foreground">{item.label}</p>
+            <p className="mt-2 text-3xl font-display font-bold text-foreground">{item.value}</p>
+          </article>
         ))}
-      </div>
+      </section>
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab} className="mt-5">
