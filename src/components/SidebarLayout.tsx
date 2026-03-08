@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   LayoutDashboard,
   Globe,
@@ -10,6 +10,7 @@ import {
   Settings,
   Shield,
   LogOut,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/components/NavLink";
@@ -43,13 +44,12 @@ const SidebarLayout = ({ children, variant }: SidebarLayoutProps) => {
   const links = variant === "admin" ? adminLinks : coupleLinks;
 
   return (
-    <div className="min-h-screen bg-secondary/40" dir="rtl">
-      <header className="sticky top-0 z-10 border-b border-border bg-card/95 px-6 py-4 backdrop-blur-sm">
+    <div className="min-h-screen bg-gradient-warm" dir="rtl">
+      <header className="sticky top-0 z-20 border-b border-border bg-card/90 px-6 py-4 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/" className="inline-flex items-center gap-2">
-              <span className="text-3xl">💗</span>
-              <span className="text-3xl font-display font-bold text-foreground">Rello</span>
+              <span className="text-4xl font-display font-bold text-foreground">Rello</span>
             </Link>
             <span className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-body text-muted-foreground">
               {variant === "admin" ? "ניהול מערכת" : "דשבורד הזוג"}
@@ -59,7 +59,9 @@ const SidebarLayout = ({ children, variant }: SidebarLayoutProps) => {
           <div className="flex items-center gap-2">
             {variant === "couple" && (
               <Button variant="outline" size="sm" asChild>
-                <Link to="/dashboard/website">צפייה באתר</Link>
+                <Link to="/dashboard/website" className="gap-2">
+                  <Eye size={14} /> צפייה באתר
+                </Link>
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={() => void signOut()} className="text-muted-foreground">
@@ -71,7 +73,7 @@ const SidebarLayout = ({ children, variant }: SidebarLayoutProps) => {
       </header>
 
       <div className="flex min-h-[calc(100vh-81px)]">
-        <aside className="w-72 shrink-0 border-l border-border bg-card p-5">
+        <aside className="w-72 shrink-0 border-l border-border bg-card/80 p-5 backdrop-blur-sm">
           <nav className="space-y-1">
             {links.map((link) => (
               <NavLink
@@ -79,7 +81,7 @@ const SidebarLayout = ({ children, variant }: SidebarLayoutProps) => {
                 to={link.href}
                 end={link.href === "/dashboard" || link.href === "/admin"}
                 className="flex items-center gap-3 rounded-xl px-4 py-3 font-body text-[1.05rem] text-muted-foreground transition-colors"
-                activeClassName="bg-rose-light text-primary font-semibold"
+                activeClassName="bg-primary/10 text-primary font-semibold"
               >
                 <link.icon size={20} />
                 <span>{link.label}</span>
@@ -89,7 +91,7 @@ const SidebarLayout = ({ children, variant }: SidebarLayoutProps) => {
 
           <div
             className={cn(
-              "mt-8 rounded-2xl border border-border p-5",
+              "mt-8 rounded-2xl border border-border p-5 shadow-card",
               variant === "admin" ? "bg-secondary" : "bg-primary text-primary-foreground",
             )}
           >

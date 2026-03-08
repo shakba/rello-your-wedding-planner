@@ -1,16 +1,53 @@
-import { MapPin, Shirt } from "lucide-react";
+import { Clock3, MapPin, Shirt, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+interface TimelineItem {
+  time: string;
+  title: string;
+}
 
 interface WeddingDetailsProps {
   story: string | null;
   venueName: string | null;
   venueAddress: string | null;
   dressCode: string | null;
+  parent1Parents?: string | null;
+  parent2Parents?: string | null;
+  eventTime?: string | null;
+  schedule?: TimelineItem[];
 }
 
-const WeddingDetails = ({ story, venueName, venueAddress, dressCode }: WeddingDetailsProps) => {
+const WeddingDetails = ({
+  story,
+  venueName,
+  venueAddress,
+  dressCode,
+  parent1Parents,
+  parent2Parents,
+  eventTime,
+  schedule = [],
+}: WeddingDetailsProps) => {
   return (
-    <div className="space-y-12 py-14">
+    <div className="space-y-10 bg-background py-14">
+      {(parent1Parents || parent2Parents) && (
+        <section className="container mx-auto max-w-5xl px-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <article className="rounded-3xl border border-border bg-card p-6 shadow-card">
+              <h2 className="inline-flex items-center gap-2 text-2xl font-display font-bold text-foreground">
+                <Users size={20} className="text-primary" /> הורי החתן
+              </h2>
+              <p className="mt-3 font-body text-lg text-muted-foreground">{parent1Parents || "יעודכן בקרוב"}</p>
+            </article>
+            <article className="rounded-3xl border border-border bg-card p-6 shadow-card">
+              <h2 className="inline-flex items-center gap-2 text-2xl font-display font-bold text-foreground">
+                <Users size={20} className="text-primary" /> הורי הכלה
+              </h2>
+              <p className="mt-3 font-body text-lg text-muted-foreground">{parent2Parents || "יעודכן בקרוב"}</p>
+            </article>
+          </div>
+        </section>
+      )}
+
       {story && (
         <section className="container mx-auto max-w-3xl px-4 text-center">
           <h2 className="text-3xl font-display font-bold">הסיפור שלנו</h2>
@@ -27,6 +64,11 @@ const WeddingDetails = ({ story, venueName, venueAddress, dressCode }: WeddingDe
               {venueName}
             </p>
             {venueAddress && <p className="mt-2 font-body text-muted-foreground">{venueAddress}</p>}
+            {eventTime && (
+              <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-1.5 font-body text-sm text-muted-foreground">
+                <Clock3 size={14} /> {eventTime}
+              </p>
+            )}
 
             {venueAddress && (
               <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -50,6 +92,22 @@ const WeddingDetails = ({ story, venueName, venueAddress, dressCode }: WeddingDe
                 </Button>
               </div>
             )}
+          </div>
+        </section>
+      )}
+
+      {schedule.length > 0 && (
+        <section className="container mx-auto max-w-3xl px-4">
+          <div className="rounded-3xl border border-border bg-card p-8 shadow-card">
+            <h2 className="text-center text-3xl font-display font-bold">לוח זמנים</h2>
+            <div className="mt-6 space-y-3">
+              {schedule.map((item, index) => (
+                <div key={`${item.time}-${item.title}-${index}`} className="flex items-center justify-between rounded-2xl border border-border bg-secondary/40 px-4 py-3">
+                  <span className="font-body text-muted-foreground">{item.title}</span>
+                  <span className="font-display text-lg font-bold text-foreground">{item.time}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}

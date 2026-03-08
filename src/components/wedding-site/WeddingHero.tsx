@@ -1,19 +1,31 @@
-import { CalendarDays } from "lucide-react";
+import heroWedding from "@/assets/hero-wedding.jpg";
 
 interface WeddingHeroProps {
   coupleNames: string;
   weddingDateLabel: string | null;
+  coverImageUrl?: string | null;
 }
 
-const WeddingHero = ({ coupleNames, weddingDateLabel }: WeddingHeroProps) => {
+const WeddingHero = ({ coupleNames, weddingDateLabel, coverImageUrl }: WeddingHeroProps) => {
+  const backgroundImage = coverImageUrl || heroWedding;
+
   return (
-    <section className="border-b border-border bg-gradient-warm py-24">
-      <div className="container mx-auto px-4 text-center">
-        <p className="text-sm font-body font-semibold text-primary">אנחנו מתחתנים</p>
-        <h1 className="mt-3 text-5xl font-display font-bold tracking-tight md:text-7xl">{coupleNames}</h1>
+    <section className="relative min-h-[72vh] overflow-hidden border-b border-border">
+      <img
+        src={backgroundImage}
+        alt={`תמונת שער - ${coupleNames}`}
+        className="absolute inset-0 h-full w-full object-cover"
+        loading="eager"
+      />
+      <div className="absolute inset-0 bg-foreground/45" />
+
+      <div className="relative container mx-auto flex min-h-[72vh] flex-col items-center justify-center px-4 text-center">
+        <p className="rounded-full border border-border/40 bg-background/20 px-4 py-1.5 text-sm font-body font-semibold text-primary-foreground backdrop-blur-sm">
+          אנחנו מתחתנים
+        </p>
+        <h1 className="mt-4 text-5xl font-display font-bold leading-tight text-primary-foreground md:text-7xl">{coupleNames}</h1>
         {weddingDateLabel && (
-          <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2 text-base font-body text-muted-foreground">
-            <CalendarDays size={18} className="text-primary" />
+          <p className="mt-5 rounded-full border border-border/40 bg-background/20 px-6 py-2 text-base font-body text-primary-foreground backdrop-blur-sm">
             {weddingDateLabel}
           </p>
         )}

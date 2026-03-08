@@ -51,13 +51,18 @@ const Dashboard = () => {
     }
     let cancelled = false;
     setStatsLoading(true);
-    const guestRequest = supabase.from("guests").select("rsvp_status").eq("wedding_id", wedding.id);
+    const guestRequest = supabase.from("guests").select("rsvp_status, plus_ones").eq("wedding_id", wedding.id);
     guestRequest.then(
       ({ data }) => {
         if (cancelled) return;
-        const total = data?.length ?? 0;
-        const confirmed = data?.filter((g) => g.rsvp_status === "confirmed").length ?? 0;
-        const declined = data?.filter((g) => g.rsvp_status === "declined").length ?? 0;
+
+        const total = (data ?? []).reduce((sum, guest) => sum + 1 + Math.max(guest.plus_ones ?? 0, 0), 0);
+        const confirmed = (data ?? [])
+          .filter((g) => g.rsvp_status === "confirmed")
+          .reduce((sum, guest) => sum + 1 + Math.max(guest.plus_ones ?? 0, 0), 0);
+        const declined = (data ?? [])
+          .filter((g) => g.rsvp_status === "declined")
+          .reduce((sum, guest) => sum + 1 + Math.max(guest.plus_ones ?? 0, 0), 0);
         const pending = total - confirmed - declined;
         const responded = confirmed + declined;
         const responseRate = total > 0 ? Number(((responded / total) * 100).toFixed(1)) : 0;
@@ -74,7 +79,7 @@ const Dashboard = () => {
 
   const statCards = useMemo(
     () => [
-      { label: "סה״כ מוזמנים", value: stats.total, icon: Users, iconClassName: "bg-primary/10 text-primary" },
+      { label: "סה״כ אורחים", value: stats.total, icon: Users, iconClassName: "bg-primary/10 text-primary" },
       { label: "אישרו הגעה", value: stats.confirmed, icon: CheckSquare, iconClassName: "bg-sage-light text-sage" },
       { label: "דחו", value: stats.declined, icon: XCircle, iconClassName: "bg-destructive/10 text-destructive" },
       { label: "ממתינים", value: stats.pending, icon: Clock3, iconClassName: "bg-secondary text-muted-foreground" },
