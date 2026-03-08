@@ -179,8 +179,13 @@ const WebsiteEditor = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2"><Label className="font-body">שם בן/בת זוג 1</Label><Input value={values.partner1_name} onChange={(e) => up("partner1_name", e.target.value)} className="font-body" /></div>
             <div className="space-y-2"><Label className="font-body">שם בן/בת זוג 2</Label><Input value={values.partner2_name} onChange={(e) => up("partner2_name", e.target.value)} className="font-body" /></div>
+            <div className="space-y-2"><Label className="font-body">הורי החתן</Label><Input value={values.parent1_parents} onChange={(e) => up("parent1_parents", e.target.value)} className="font-body" placeholder="לדוגמה: משה ושושנה כהן" /></div>
+            <div className="space-y-2"><Label className="font-body">הורי הכלה</Label><Input value={values.parent2_parents} onChange={(e) => up("parent2_parents", e.target.value)} className="font-body" placeholder="לדוגמה: דוד ורחל לוי" /></div>
           </div>
-          <div className="space-y-2"><Label className="font-body">תאריך החתונה</Label><Input type="date" value={values.wedding_date} onChange={(e) => up("wedding_date", e.target.value)} dir="ltr" className="text-left font-body" /></div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2"><Label className="font-body">תאריך החתונה</Label><Input type="date" value={values.wedding_date} onChange={(e) => up("wedding_date", e.target.value)} dir="ltr" className="text-left font-body" /></div>
+            <div className="space-y-2"><Label className="font-body">שעת תחילת האירוע</Label><Input type="time" value={values.event_time} onChange={(e) => up("event_time", e.target.value)} dir="ltr" className="text-left font-body" /></div>
+          </div>
           <div className="space-y-2"><Label className="font-body">הסיפור שלכם</Label><Textarea value={values.story} onChange={(e) => up("story", e.target.value)} className="min-h-[180px] font-body" placeholder="ספרו לאורחים קצת על הדרך שלכם..." /></div>
         </section>
 
