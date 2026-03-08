@@ -79,7 +79,7 @@ const Dashboard = () => {
 
   const statCards = useMemo(
     () => [
-      { label: "סה״כ מוזמנים", value: stats.total, icon: Users, iconClassName: "bg-primary/10 text-primary" },
+      { label: "סה״כ אורחים", value: stats.total, icon: Users, iconClassName: "bg-primary/10 text-primary" },
       { label: "אישרו הגעה", value: stats.confirmed, icon: CheckSquare, iconClassName: "bg-sage-light text-sage" },
       { label: "דחו", value: stats.declined, icon: XCircle, iconClassName: "bg-destructive/10 text-destructive" },
       { label: "ממתינים", value: stats.pending, icon: Clock3, iconClassName: "bg-secondary text-muted-foreground" },
