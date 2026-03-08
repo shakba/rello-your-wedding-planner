@@ -13,18 +13,66 @@ import { supabase } from "@/integrations/supabase/client";
 import GalleryUpload from "@/components/wedding-site/GalleryUpload";
 
 interface WebsiteFormValues {
-  partner1_name: string; partner2_name: string; wedding_date: string;
-  venue_name: string; venue_address: string; story: string;
-  dress_code: string; website_slug: string; website_published: boolean;
+  partner1_name: string;
+  partner2_name: string;
+  wedding_date: string;
+  venue_name: string;
+  venue_address: string;
+  story: string;
+  dress_code: string;
+  website_slug: string;
+  website_published: boolean;
+  parent1_parents: string;
+  parent2_parents: string;
+  event_time: string;
+  schedule_text: string;
 }
 
 const EMPTY_FORM: WebsiteFormValues = {
-  partner1_name: "", partner2_name: "", wedding_date: "",
-  venue_name: "", venue_address: "", story: "",
-  dress_code: "", website_slug: "", website_published: false,
+  partner1_name: "",
+  partner2_name: "",
+  wedding_date: "",
+  venue_name: "",
+  venue_address: "",
+  story: "",
+  dress_code: "",
+  website_slug: "",
+  website_published: false,
+  parent1_parents: "",
+  parent2_parents: "",
+  event_time: "",
+  schedule_text: "",
 };
 
 const normalizeSlug = (v: string) => v.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/-{2,}/g, "-").replace(/^-|-$/g, "");
+
+const formatSchedule = (schedule: unknown): string => {
+  if (!Array.isArray(schedule)) return "";
+  return schedule
+    .map((item) => {
+      if (!item || typeof item !== "object") return "";
+      const time = "time" in item && typeof item.time === "string" ? item.time.trim() : "";
+      const title = "title" in item && typeof item.title === "string" ? item.title.trim() : "";
+      return time && title ? `${time} - ${title}` : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+};
+
+const parseSchedule = (value: string): { time: string; title: string }[] | null => {
+  const rows = value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [time, ...rest] = line.split("-");
+      const title = rest.join("-").trim();
+      return { time: time?.trim() ?? "", title };
+    })
+    .filter((item) => item.time && item.title);
+
+  return rows.length > 0 ? rows : null;
+};
 
 const WebsiteEditor = () => {
   const { user } = useAuth();
