@@ -46,16 +46,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
+    let currentUserId: string | null = null;
 
     const applySession = (nextSession: Session | null) => {
       if (!mounted) return;
+
+      const nextUserId = nextSession?.user?.id ?? null;
 
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setAuthReady(true);
 
-      if (nextSession?.user) {
-        setLoading(true);
+      // Only trigger role re-fetch (loading=true) if user actually changed
+      if (nextUserId !== currentUserId) {
+        currentUserId = nextUserId;
+        if (nextUserId) {
+          setLoading(true);
+        }
       }
     };
 

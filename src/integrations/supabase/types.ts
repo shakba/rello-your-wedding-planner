@@ -189,6 +189,41 @@ export type Database = {
           },
         ]
       }
+      song_requests: {
+        Row: {
+          artist: string | null
+          created_at: string
+          guest_name: string
+          id: string
+          song_name: string
+          wedding_id: string
+        }
+        Insert: {
+          artist?: string | null
+          created_at?: string
+          guest_name: string
+          id?: string
+          song_name: string
+          wedding_id: string
+        }
+        Update: {
+          artist?: string | null
+          created_at?: string
+          guest_name?: string
+          id?: string
+          song_name?: string
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_requests_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -212,18 +247,23 @@ export type Database = {
       }
       weddings: {
         Row: {
+          cover_image_url: string | null
           created_at: string
           dress_code: string | null
+          event_time: string | null
           faq: Json | null
           gallery_urls: string[] | null
           id: string
           max_guests: number | null
+          parent1_parents: string | null
+          parent2_parents: string | null
           partner1_name: string
           partner2_name: string
           plan: string | null
           registry_enabled: boolean | null
           registry_items: Json | null
           schedule: Json | null
+          song_requests_enabled: boolean | null
           story: string | null
           updated_at: string
           user_id: string
@@ -237,18 +277,23 @@ export type Database = {
           wedding_date: string | null
         }
         Insert: {
+          cover_image_url?: string | null
           created_at?: string
           dress_code?: string | null
+          event_time?: string | null
           faq?: Json | null
           gallery_urls?: string[] | null
           id?: string
           max_guests?: number | null
+          parent1_parents?: string | null
+          parent2_parents?: string | null
           partner1_name?: string
           partner2_name?: string
           plan?: string | null
           registry_enabled?: boolean | null
           registry_items?: Json | null
           schedule?: Json | null
+          song_requests_enabled?: boolean | null
           story?: string | null
           updated_at?: string
           user_id: string
@@ -262,18 +307,23 @@ export type Database = {
           wedding_date?: string | null
         }
         Update: {
+          cover_image_url?: string | null
           created_at?: string
           dress_code?: string | null
+          event_time?: string | null
           faq?: Json | null
           gallery_urls?: string[] | null
           id?: string
           max_guests?: number | null
+          parent1_parents?: string | null
+          parent2_parents?: string | null
           partner1_name?: string
           partner2_name?: string
           plan?: string | null
           registry_enabled?: boolean | null
           registry_items?: Json | null
           schedule?: Json | null
+          song_requests_enabled?: boolean | null
           story?: string | null
           updated_at?: string
           user_id?: string
