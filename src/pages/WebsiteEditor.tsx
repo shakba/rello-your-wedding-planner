@@ -196,6 +196,15 @@ const WebsiteEditor = () => {
           <div className="space-y-2"><Label className="font-body">כתובת מלאה</Label><Input value={values.venue_address} onChange={(e) => up("venue_address", e.target.value)} className="font-body" /></div>
           <div className="space-y-2"><Label className="font-body">קוד לבוש</Label><Input value={values.dress_code} onChange={(e) => up("dress_code", e.target.value)} className="font-body" placeholder="למשל: קלאסי אלגנט" /></div>
           <div className="space-y-2">
+            <Label className="font-body">לו"ז האירוע</Label>
+            <Textarea
+              value={values.schedule_text}
+              onChange={(e) => up("schedule_text", e.target.value)}
+              className="min-h-[140px] font-body"
+              placeholder={"כל שורה בפורמט: שעה - כותרת\n18:00 - קבלת פנים\n19:00 - חופה\n20:00 - ארוחת ערב"}
+            />
+          </div>
+          <div className="space-y-2">
             <Label className="font-body">כתובת אתר</Label>
             <div className="flex items-center gap-2" dir="ltr"><span className="font-body text-muted-foreground">/w/</span><Input value={values.website_slug} onChange={(e) => up("website_slug", normalizeSlug(e.target.value))} className="text-left font-body" placeholder="sarah-and-james" /></div>
           </div>
