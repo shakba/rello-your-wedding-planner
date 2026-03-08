@@ -107,12 +107,12 @@ const WeddingRsvp = ({ weddingId }: WeddingRsvpProps) => {
               ) : null}
 
               <div className="space-y-2">
-                <label className="text-sm font-body text-muted-foreground">מספר מלווים</label>
+                <label className="text-sm font-body text-muted-foreground">סה״כ אורחים</label>
                 <Input
                   type="number"
-                  min={0}
-                  value={plusOnes}
-                  onChange={(event) => setPlusOnes(Math.max(Number(event.target.value) || 0, 0))}
+                  min={1}
+                  value={plusOnes + 1}
+                  onChange={(event) => setPlusOnes(Math.max((Number(event.target.value) || 1) - 1, 0))}
                   className="font-body"
                 />
               </div>

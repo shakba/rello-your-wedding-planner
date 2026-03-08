@@ -8,9 +8,14 @@ import WeddingDetails from "@/components/wedding-site/WeddingDetails";
 import WeddingGallery from "@/components/wedding-site/WeddingGallery";
 import WeddingRsvp from "@/components/wedding-site/WeddingRsvp";
 
+type TimelineItem = {
+  time: string;
+  title: string;
+};
+
 type PublicWedding = Pick<
   Wedding,
-  "id" | "partner1_name" | "partner2_name" | "wedding_date" | "story" | "venue_name" | "venue_address" | "dress_code" | "gallery_urls"
+  "id" | "partner1_name" | "partner2_name" | "wedding_date" | "story" | "venue_name" | "venue_address" | "dress_code" | "gallery_urls" | "parent1_parents" | "parent2_parents" | "event_time" | "schedule" | "cover_image_url"
 >;
 
 const WeddingWebsite = () => {
@@ -30,7 +35,7 @@ const WeddingWebsite = () => {
       try {
         const { data, error } = await supabase
           .from("weddings")
-          .select("id, partner1_name, partner2_name, wedding_date, story, venue_name, venue_address, dress_code, gallery_urls")
+          .select("id, partner1_name, partner2_name, wedding_date, story, venue_name, venue_address, dress_code, gallery_urls, parent1_parents, parent2_parents, event_time, schedule, cover_image_url")
           .eq("website_slug", normalizedSlug)
           .eq("website_published", true)
           .order("updated_at", { ascending: false })
@@ -63,10 +68,29 @@ const WeddingWebsite = () => {
 
   const weddingDateLabel = useMemo(() => {
     if (!wedding?.wedding_date) return null;
-    return new Date(wedding.wedding_date).toLocaleDateString("he-IL", {
-      weekday: "long", day: "numeric", month: "long", year: "numeric",
-    });
+    const parsed = new Date(wedding.wedding_date);
+    if (Number.isNaN(parsed.getTime())) return null;
+
+    const day = parsed.toLocaleDateString("he-IL", { day: "2-digit" });
+    const month = parsed.toLocaleDateString("he-IL", { month: "long" });
+    const year = parsed.toLocaleDateString("he-IL", { year: "numeric" });
+    return `${day} · ${month} · ${year}`;
   }, [wedding?.wedding_date]);
+
+  const timelineItems = useMemo<TimelineItem[]>(() => {
+    const schedule = wedding?.schedule;
+    if (!Array.isArray(schedule)) return [];
+
+    return schedule
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const time = "time" in item && typeof item.time === "string" ? item.time.trim() : "";
+        const title = "title" in item && typeof item.title === "string" ? item.title.trim() : "";
+        if (!time || !title) return null;
+        return { time, title };
+      })
+      .filter((item): item is TimelineItem => item !== null);
+  }, [wedding?.schedule]);
 
   if (loading) {
     return (
@@ -89,12 +113,20 @@ const WeddingWebsite = () => {
 
   return (
     <main className="min-h-screen bg-background" dir="rtl">
-      <WeddingHero coupleNames={coupleNames} weddingDateLabel={weddingDateLabel} />
+      <WeddingHero
+        coupleNames={coupleNames}
+        weddingDateLabel={weddingDateLabel}
+        coverImageUrl={wedding.cover_image_url || wedding.gallery_urls?.[0] || null}
+      />
       <WeddingDetails
         story={wedding.story}
         venueName={wedding.venue_name}
         venueAddress={wedding.venue_address}
         dressCode={wedding.dress_code}
+        parent1Parents={wedding.parent1_parents}
+        parent2Parents={wedding.parent2_parents}
+        eventTime={wedding.event_time}
+        schedule={timelineItems}
       />
       <WeddingGallery galleryUrls={wedding.gallery_urls ?? []} />
       <WeddingRsvp weddingId={wedding.id} />
