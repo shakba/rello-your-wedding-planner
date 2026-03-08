@@ -113,11 +113,19 @@ const WebsiteEditor = () => {
     setSaving(true);
     try {
       const { error } = await supabase.from("weddings").update({
-        partner1_name: values.partner1_name.trim(), partner2_name: values.partner2_name.trim(),
-        wedding_date: values.wedding_date || null, venue_name: values.venue_name.trim() || null,
-        venue_address: values.venue_address.trim() || null, story: values.story.trim() || null,
-        dress_code: values.dress_code.trim() || null, website_slug: normalizeSlug(values.website_slug) || null,
+        partner1_name: values.partner1_name.trim(),
+        partner2_name: values.partner2_name.trim(),
+        wedding_date: values.wedding_date || null,
+        venue_name: values.venue_name.trim() || null,
+        venue_address: values.venue_address.trim() || null,
+        story: values.story.trim() || null,
+        dress_code: values.dress_code.trim() || null,
+        website_slug: normalizeSlug(values.website_slug) || null,
         website_published: values.website_published,
+        parent1_parents: values.parent1_parents.trim() || null,
+        parent2_parents: values.parent2_parents.trim() || null,
+        event_time: values.event_time.trim() || null,
+        schedule: parseSchedule(values.schedule_text),
       }).eq("id", wedding.id);
       if (error) { toast.error("לא הצלחנו לשמור את השינויים"); return; }
       toast.success("האתר עודכן בהצלחה");
