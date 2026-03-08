@@ -15,6 +15,8 @@ import GuestAssignPanel from "@/components/seating/GuestAssignPanel";
 import SeatingTableView from "@/components/seating/SeatingTableView";
 import { toast } from "sonner";
 
+const getGuestTotal = (guest: Guest) => 1 + Math.max(guest.plus_ones ?? 0, 0);
+
 const SeatingPage = () => {
   const { user } = useAuth();
   const { wedding, loading: weddingLoading } = useWedding(user?.id);
@@ -136,8 +138,13 @@ const SeatingPage = () => {
   }, []);
 
   const getAssignedCount = useCallback(
-    (elementId: string) => Object.values(assignments).filter((eId) => eId === elementId).length,
-    [assignments]
+    (elementId: string) => Object.entries(assignments)
+      .filter(([, eId]) => eId === elementId)
+      .reduce((sum, [guestId]) => {
+        const guest = guests.find((g) => g.id === guestId);
+        return sum + (guest ? getGuestTotal(guest) : 0);
+      }, 0),
+    [assignments, guests]
   );
 
   const selectedElement = useMemo(() => elements.find((e) => e.id === selectedId) ?? null, [elements, selectedId]);
@@ -191,9 +198,14 @@ const SeatingPage = () => {
 
   // Stats
   const stats = useMemo(() => {
-    const totalGuests = guests.length;
-    const assigned = Object.keys(assignments).length;
-    const confirmed = guests.filter((g) => g.rsvp_status === "confirmed").length;
+    const totalGuests = guests.reduce((sum, guest) => sum + getGuestTotal(guest), 0);
+    const assigned = Object.entries(assignments).reduce((sum, [guestId]) => {
+      const guest = guests.find((g) => g.id === guestId);
+      return sum + (guest ? getGuestTotal(guest) : 0);
+    }, 0);
+    const confirmed = guests
+      .filter((g) => g.rsvp_status === "confirmed")
+      .reduce((sum, guest) => sum + getGuestTotal(guest), 0);
     const tables = elements.filter((e) => e.type === "round-table" || e.type === "rect-table").length;
     const totalCapacity = elements
       .filter((e) => e.type === "round-table" || e.type === "rect-table")

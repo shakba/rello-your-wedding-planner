@@ -24,6 +24,8 @@ const STATUS_LABELS: Record<string, string> = {
   declined: "דחה/תה",
 };
 
+const getGuestTotal = (guest: Guest) => 1 + Math.max(guest.plus_ones ?? 0, 0);
+
 const GuestsPage = () => {
   const { user } = useAuth();
   const { wedding, loading: weddingLoading, ensureWedding } = useWedding(user?.id);
@@ -37,7 +39,7 @@ const GuestsPage = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   const [newGuest, setNewGuest] = useState({
-    full_name: "", phone: "", email: "", plus_ones: 0, group_id: "none",
+    full_name: "", phone: "", email: "", total_guests: 1, group_id: "none",
   });
 
   const loadGuests = async () => {
@@ -82,12 +84,12 @@ const GuestsPage = () => {
       full_name: newGuest.full_name.trim(),
       phone: newGuest.phone.trim() || null,
       email: newGuest.email.trim() || null,
-      plus_ones: Math.max(newGuest.plus_ones, 0),
+      plus_ones: Math.max(newGuest.total_guests - 1, 0),
       group_id: newGuest.group_id === "none" ? null : newGuest.group_id,
     });
     if (error) { toast.error("לא הצלחנו להוסיף מוזמן"); return; }
     toast.success("המוזמן נוסף בהצלחה");
-    setNewGuest({ full_name: "", phone: "", email: "", plus_ones: 0, group_id: "none" });
+    setNewGuest({ full_name: "", phone: "", email: "", total_guests: 1, group_id: "none" });
     setIsAddOpen(false);
     void loadGuests();
   };
@@ -108,12 +110,26 @@ const GuestsPage = () => {
     setGuests((cur) => cur.map((g) => g.id === id ? { ...g, rsvp_status: status, rsvp_answered_at: status === "pending" ? null : new Date().toISOString() } : g));
   };
 
-  const stats = {
-    total: guests.length,
-    confirmed: guests.filter((g) => g.rsvp_status === "confirmed").length,
-    declined: guests.filter((g) => g.rsvp_status === "declined").length,
-    pending: guests.filter((g) => (g.rsvp_status ?? "pending") === "pending").length,
-  };
+  const stats = useMemo(() => {
+    const total = guests.reduce((sum, g) => sum + getGuestTotal(g), 0);
+    const confirmed = guests
+      .filter((g) => g.rsvp_status === "confirmed")
+      .reduce((sum, g) => sum + getGuestTotal(g), 0);
+    const declined = guests
+      .filter((g) => g.rsvp_status === "declined")
+      .reduce((sum, g) => sum + getGuestTotal(g), 0);
+    const pending = guests
+      .filter((g) => (g.rsvp_status ?? "pending") === "pending")
+      .reduce((sum, g) => sum + getGuestTotal(g), 0);
+
+    return {
+      total,
+      confirmed,
+      declined,
+      pending,
+      households: guests.length,
+    };
+  }, [guests]);
 
   return (
     <SidebarLayout variant="couple">
@@ -165,8 +181,17 @@ const GuestsPage = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-body">מלווים</Label>
-                    <Input type="number" min={0} value={newGuest.plus_ones} onChange={(e) => setNewGuest((p) => ({ ...p, plus_ones: Math.max(Number(e.target.value) || 0, 0) }))} className="font-body" />
+                    <Label className="font-body">סה״כ אורחים לרשומה</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={newGuest.total_guests}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        setNewGuest((p) => ({ ...p, total_guests: Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 1 }));
+                      }}
+                      className="font-body"
+                    />
                   </div>
                 </div>
                 <Button className="w-full" variant="hero" onClick={addGuest}>שמירת מוזמן</Button>
@@ -177,12 +202,13 @@ const GuestsPage = () => {
       </div>
 
       {/* Stats */}
-      <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-5">
         {[
-          { label: "סה״כ", value: stats.total },
+          { label: "סה״כ אורחים", value: stats.total },
           { label: "אישרו", value: stats.confirmed },
           { label: "ממתינים", value: stats.pending },
           { label: "דחו", value: stats.declined },
+          { label: "משקי בית", value: stats.households },
         ].map((item) => (
           <article key={item.label} className="rounded-2xl border border-border bg-card p-5 shadow-card">
             <p className="font-body text-sm text-muted-foreground">{item.label}</p>
@@ -261,7 +287,7 @@ const GuestsPage = () => {
                   <th className="px-3 py-3">טלפון</th>
                   <th className="px-3 py-3">קבוצה</th>
                   <th className="px-3 py-3">סטטוס</th>
-                  <th className="px-3 py-3">מלווים</th>
+                  <th className="px-3 py-3">סה״כ אורחים</th>
                   <th className="px-3 py-3">פעולות</th>
                 </tr>
               </thead>
@@ -279,7 +305,7 @@ const GuestsPage = () => {
                         </SelectContent>
                       </Select>
                     </td>
-                    <td className="px-3 py-3 text-muted-foreground">{guest.plus_ones ?? 0}</td>
+                    <td className="px-3 py-3 text-muted-foreground">{getGuestTotal(guest)}</td>
                     <td className="px-3 py-3">
                       <Button variant="ghost" size="icon" onClick={() => void deleteGuest(guest.id)} className="text-muted-foreground hover:text-destructive">
                         <Trash2 size={16} />
@@ -297,3 +323,4 @@ const GuestsPage = () => {
 };
 
 export default GuestsPage;
+
